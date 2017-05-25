@@ -1,3 +1,2 @@
 # Self-Driving-Car
-A self-driving model car
-Working
+A self-driving model car. Working
