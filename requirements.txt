@@ -1,0 +1,8 @@
+tensorflow-gpu
+pygame
+pyserial
+pigpio
+picamera
+numpy
+pyzmq
+h5py
