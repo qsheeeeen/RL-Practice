@@ -1,4 +1,3 @@
-#!/usr/local/bin/python3
 # coding: utf-8
 
 """A Socket subclass that adds some serialization methods."""

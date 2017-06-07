@@ -1,3 +1,5 @@
+# coding: utf-8
+
 import time
 
 import h5py
@@ -9,7 +11,7 @@ from environment.racing_car import RacingCar
 
 def main():
     agent = ControllerAgnet()
-    env = RacingCar(use_controller=True)
+    env = RacingCar()
 
     h5_file = h5py.File('./data_set.hdf5', 'a')
     group = h5_file.create_group(time.ctime().replace(' ', '-'))

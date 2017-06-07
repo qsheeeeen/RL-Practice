@@ -1,4 +1,3 @@
-#!/usr/local/bin/python3
 # coding: utf-8
 
 # Copied from pygame documents.
