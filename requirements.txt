@@ -1,6 +1,5 @@
 tensorflow-gpu
 pygame
-pyserial
 pigpio
 picamera
 numpy
