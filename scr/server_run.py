@@ -4,7 +4,7 @@
 
 import zmq
 
-from agent import ControllerAgnet
+from agent import ControllerAgent
 from tools.communication import send_zipped_pickle, receive_zipped_pickle
 
 
@@ -17,7 +17,7 @@ def main():
     result_sender = context.socket(zmq.PUSH)
     result_sender.bind("tcp://*:5558")
 
-    agent = ControllerAgnet()
+    agent = ControllerAgent()
 
     while True:
         data = receive_zipped_pickle(data_receiver)

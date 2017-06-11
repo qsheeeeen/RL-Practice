@@ -10,7 +10,6 @@ import pigpio
 
 class RacingCar(object):
     def __init__(self):
-        self.___spoiler_servo_pin = 5
         self.__steering_servo_pin = 4
         self.__motor_pin = 17
         self.__left_line_sensor_pin = 1
@@ -39,7 +38,6 @@ class RacingCar(object):
 
         self.__pi_car.set_servo_pulsewidth(self.__motor_pin, 0)
         self.__pi_car.set_servo_pulsewidth(self.__steering_servo_pin, 0)
-        self.__pi_car.set_servo_pulsewidth(self.___spoiler_servo_pin, 0)
 
         self.__motor = 0.
         self.__steering_angle = 0.
@@ -68,7 +66,6 @@ class RacingCar(object):
 
         real_pwm = self.scale_range(self.__motor, -1., 1., 1000., 2000.)
         self.__pi_car.set_servo_pulsewidth(self.__motor_pin, real_pwm)
-        self.__pi_car.set_servo_pulsewidth(self.___spoiler_servo_pin, real_pwm)
 
         real_pwm = self.scale_range(self.__steering_angle, -1., 1., 1000., 2000.)
         self.__pi_car.set_servo_pulsewidth(self.__steering_servo_pin, real_pwm)

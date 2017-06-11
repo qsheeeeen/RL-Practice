@@ -21,6 +21,7 @@ def receive_zipped_pickle(socket, flags=0, protocol=-1):
     p = zlib.decompress(z)
     return pickle.loads(p)
 
+
 def main():
     context = zmq.Context()
 
@@ -41,6 +42,7 @@ def main():
     print(time.time() - start)
     print("Checking zipped pickle...")
     print("Okay" if (array == B).all() else "Failed")
+
 
 if __name__ == '__main__':
     main()

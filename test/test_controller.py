@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copied from pygame documents.
+# Copied from PyGame documents.
 
 import pygame
 

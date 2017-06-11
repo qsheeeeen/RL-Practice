@@ -5,12 +5,12 @@ import time
 import h5py
 import numpy as np
 
-from agent.controller_agent import ControllerAgnet
-from environment.racing_car import RacingCar
+from agent import ControllerAgent
+from environment import RacingCar
 
 
 def main():
-    agent = ControllerAgnet()
+    agent = ControllerAgent()
     env = RacingCar()
 
     h5_file = h5py.File('./data_set.hdf5', 'a')
