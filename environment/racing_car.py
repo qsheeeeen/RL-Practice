@@ -22,7 +22,7 @@ class RacingCar(object):
 
         image_width, image_height = (320, 240)
 
-        self.__image = np.empty((image_height, image_width, 3), dtype=np.uint8)
+        self.image = np.empty((image_height, image_width, 3), dtype=np.uint8)
 
         self.__cam = picamera.Picamera()
         self.__cam.resolution = image_width, image_height
@@ -60,7 +60,7 @@ class RacingCar(object):
         self.__reward = 0
         self.__done = False
 
-        return self.__image, self.__reward, self.__done, self.__info
+        return self.image, self.__reward, self.__done, self.__info
 
     def step(self, action: np.ndarray) -> (np.ndarray, float, bool, list):
         self.__steering_angle = action[0]
@@ -75,7 +75,7 @@ class RacingCar(object):
 
         self.__get_image()
 
-        return self.__image, self.__reward, self.__done, self.__info
+        return self.image, self.__reward, self.__done, self.__info
 
     def close(self) -> None:
         self.__cam.close()
@@ -85,7 +85,7 @@ class RacingCar(object):
         self.__pi_car.stop()
 
     def __get_image(self) -> None:
-        self.__cam.capture(self.__image, 'rgb', use_video_port=True)
+        self.__cam.capture(self.image, 'rgb', use_video_port=True)
 
     def __line_interrupt_handle(self) -> None:
         self.__done = True

@@ -2,32 +2,32 @@
 
 # Think of server as remote.
 
-import numpy as np
 import zmq
 
-from tools.communication import SerializingContext
+from agent import ControllerAgnet
+from tools.communication import send_zipped_pickle, receive_zipped_pickle
 
 
 def main():
-    ctx = SerializingContext()
-    req = ctx.socket(zmq.REQ)
-    rep = ctx.socket(zmq.REP)
+    context = zmq.Context()
 
-    rep.bind('inproc://a')
-    req.connect('inproc://a')
-    A = np.ones((1024, 1024))
-    print("Array is %i bytes" % (A.nbytes))
+    data_receiver = context.socket(zmq.PULL)
+    data_receiver.bind("tcp://*:5555")
 
-    # send/recv with pickle+zip
-    req.send_zipped_pickle(A)
-    B = rep.recv_zipped_pickle()
-    # now try non-copying version
-    rep.send_array(A, copy=False)
-    C = req.recv_array(copy=False)
-    print("Checking zipped pickle...")
-    print("Okay" if (A == B).all() else "Failed")
-    print("Checking send_array...")
-    print("Okay" if (C == B).all() else "Failed")
+    result_sender = context.socket(zmq.PUSH)
+    result_sender.bind("tcp://*:5558")
+
+    agent = ControllerAgnet()
+
+    while True:
+        data = receive_zipped_pickle(data_receiver)
+
+        ob, reward, done, info = data
+        print('Data:\t{}\t{}\t{}'.format(reward, done, info))
+
+        result = agent.act(ob, reward, done)
+
+        send_zipped_pickle(result_sender, result)
 
 
 if __name__ == '__main__':

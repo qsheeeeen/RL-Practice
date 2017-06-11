@@ -15,7 +15,7 @@ class ControllerAgnet(object):
         self.__controller = pygame.joystick.Joystick(0)
         self.__controller.init()
 
-    def act(self, ob, reward, done):
+    def act(self, observation, reward, done):
         steering = self.__controller.get_axis(self.__steering_axis)
         gas_break = -self.__controller.get_axis(self.__gas_break_axis)
 

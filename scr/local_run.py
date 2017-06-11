@@ -1,11 +1,37 @@
 # coding: utf-8
 
 # Think of car as local.
+import time
+
+import h5py
+import numpy as np
+import zmq
+
+from environment.racing_car import RacingCar
+from tools.communication import send_zipped_pickle, receive_zipped_pickle
 
 
 def main():
-    pass
+    env = RacingCar()
 
+    context = zmq.Context()
+    
+    data_sender = context.socket(zmq.PUSH)
+    data_sender.connect("tcp://192.168.1.2:5558")
+    
+    result_receiver = context.socket(zmq.PULL)
+    result_receiver.connect("tcp://192.168.1.2:5555")
+
+    data = env.reset()
+
+    send_zipped_pickle(data_sender, data)
+    
+    while True:
+        action = receive_zipped_pickle(result_receiver)
+        
+        data = env.step(action)
+        
+        send_zipped_pickle(data_sender, data)
 
 if __name__ == '__main__':
     main()
