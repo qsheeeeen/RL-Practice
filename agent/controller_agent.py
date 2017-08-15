@@ -5,6 +5,8 @@ import pygame
 
 
 class ControllerAgent(object):
+    """For testing and fun.
+    """
     def __init__(self):
         self.__steering_axis = 4
         self.__gas_break_axis = 2

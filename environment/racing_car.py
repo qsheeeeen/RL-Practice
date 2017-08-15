@@ -9,7 +9,7 @@ import pigpio
 
 
 class RacingCar(object):
-    def __init__(self):
+    def __init__(self, motor_limitation=0.6):
         self.__steering_servo_pin = 4
         self.__motor_pin = 17
         self.__left_line_sensor_pin = 1
@@ -21,7 +21,7 @@ class RacingCar(object):
 
         image_width, image_height = (320, 240)
 
-        self.image = np.empty((image_height, image_width, 3), dtype=np.uint8)
+        self.__image = np.empty((image_height, image_width, 3), dtype=np.uint8)
 
         self.__cam = picamera.Picamera()
         self.__cam.resolution = image_width, image_height
@@ -40,29 +40,35 @@ class RacingCar(object):
         self.__pi_car.set_servo_pulsewidth(self.__steering_servo_pin, 0)
 
         self.__motor = 0.
+        self.__motor_limitation = motor_limitation
         self.__steering_angle = 0.
 
         self.__reward = 0.
         self.__done = False
         self.__info = (self.__motor, self.__steering_angle)
 
-        self.action_list = (
+        self.__action_list = (
             'Left & Right',
             'Gas & Break'
         )
 
-        self.action_space = np.zeros(len(self.action_space), np.float32)
+    def get_action_shape(self):
+        return len(self.__action_list)
 
-    def reset(self) -> (np.ndarray, float, bool, list):
+    def get_state_shape(self):
+        return self.__image.shape
+
+    def reset(self) -> (np.ndarray, float, bool, tuple):
         self.__get_image()
         self.__reward = 0
         self.__done = False
 
-        return self.image, self.__reward, self.__done, self.__info
+        return self.__image, self.__reward, self.__done, self.__info
 
-    def step(self, action: np.ndarray) -> (np.ndarray, float, bool, list):
-        self.__steering_angle = action[0]
-        self.__motor = action[1]
+    def step(self, action: np.ndarray) -> (np.ndarray, float, bool, tuple):
+        self.__steering_angle, self.__motor = action
+
+        self.__motor *= self.__motor_limitation
 
         real_pwm = self.scale_range(self.__motor, -1., 1., 1000., 2000.)
         self.__pi_car.set_servo_pulsewidth(self.__motor_pin, real_pwm)
@@ -72,7 +78,7 @@ class RacingCar(object):
 
         self.__get_image()
 
-        return self.image, self.__reward, self.__done, self.__info
+        return self.__image, self.__reward, self.__done, self.__info
 
     def close(self) -> None:
         self.__cam.close()
@@ -82,7 +88,7 @@ class RacingCar(object):
         self.__pi_car.stop()
 
     def __get_image(self) -> None:
-        self.__cam.capture(self.image, 'rgb', use_video_port=True)
+        self.__cam.capture(self.__image, 'rgb', use_video_port=True)
 
     def __line_interrupt_handle(self) -> None:
         self.__done = True
