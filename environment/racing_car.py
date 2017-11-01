@@ -9,16 +9,8 @@ import pigpio
 
 
 class RacingCar(object):
-    def __init__(self, motor_limitation=0.6):
-        self.__steering_servo_pin = 4
-        self.__motor_pin = 17
-        self.__left_line_sensor_pin = 1
-        self.__right_line_sensor_pin = 2
-        self.__encoder_dir_pin = 12
-        self.__encoder_zero_pin = 13
-
-        self.__forward_pin_level = 1
-
+    def __init__(self, motor_limitation=0.6, reward_refresh_rate=20):
+        # Camera setup.
         image_width, image_height = (320, 240)
 
         self.__image = np.empty((image_height, image_width, 3), dtype=np.uint8)
@@ -28,74 +20,100 @@ class RacingCar(object):
         self.__cam.framerate = 40
         self.__cam.exposure_mode = 'sport'
 
+        # Controller setup.
+        self.__STEERING_SERVO_PIN = 4
+        self.__MOTOR_PIN = 17
+        self.__LEFT_LINE_SENSOR_PIN = 1
+        self.__RIGHT_LINE_SENSOR_PIN = 2
+        self.__ENCODER_DIR_PIN = 12
+        self.__ENCODER_ZERO_PIN = 13
+
+        self.__FORWARD_PIN_LEVEL = 1
+
         os.system('sudo pigpiod')
         time.sleep(1)
         self.__pi_car = pigpio.pi()
 
-        self.__pi_car.callback(self.__left_line_sensor_pin, pigpio.RISING_EDGE, self.__line_interrupt_handle)
-        self.__pi_car.callback(self.__right_line_sensor_pin, pigpio.RISING_EDGE, self.__line_interrupt_handle)
-        self.__pi_car.callback(self.__encoder_zero_pin, pigpio.RISING_EDGE, self.__update_reward)
+        self.__pi_car.callback(self.__LEFT_LINE_SENSOR_PIN, pigpio.RISING_EDGE, self.__line_interrupt_handle)
+        self.__pi_car.callback(self.__RIGHT_LINE_SENSOR_PIN, pigpio.RISING_EDGE, self.__line_interrupt_handle)
+        self.__pi_car.callback(self.__ENCODER_ZERO_PIN, pigpio.RISING_EDGE, self.__update_reward)
 
-        self.__pi_car.set_servo_pulsewidth(self.__motor_pin, 0)
-        self.__pi_car.set_servo_pulsewidth(self.__steering_servo_pin, 0)
+        self.__pi_car.set_servo_pulsewidth(self.__MOTOR_PIN, 0)
+        self.__pi_car.set_servo_pulsewidth(self.__STEERING_SERVO_PIN, 0)
 
-        self.__motor = 0.
-        self.__motor_limitation = motor_limitation
-        self.__steering_angle = 0.
-
+        # Setup interacting environment.
+        self.__last_action_time = time.time()
+        self.__reward_time_interval = 1. / reward_refresh_rate
         self.__reward = 0.
         self.__done = False
-        self.__info = (self.__motor, self.__steering_angle)
+
+        self.__last_encoder_time = time.time()
+        self.__car_speed = 0.
+        self.__info = self.__motor_signal, self.__steering_signal, self.__car_speed
 
         self.__action_list = (
             'Left & Right',
-            'Gas & Break'
-        )
+            'Gas & Break')
 
-    def get_action_shape(self):
-        return len(self.__action_list)
+        self.__motor_signal = 0.
+        self.__motor_limitation = motor_limitation
+        self.__steering_signal = 0.
 
-    def get_state_shape(self):
-        return self.__image.shape
+        self.action_shape = len(self.__action_list)
+        self.state_shape = self.__image.shape
 
     def reset(self) -> (np.ndarray, float, bool, tuple):
-        self.__get_image()
+        self.__cam.capture(self.__image, 'rgb', use_video_port=True)
         self.__reward = 0
         self.__done = False
 
         return self.__image, self.__reward, self.__done, self.__info
 
     def step(self, action: np.ndarray) -> (np.ndarray, float, bool, tuple):
-        self.__steering_angle, self.__motor = action
+        self.__motor_signal *= self.__motor_limitation
 
-        self.__motor *= self.__motor_limitation
+        self.__update_pwm(self.__steering_signal, self.__motor_signal)
 
-        real_pwm = self.scale_range(self.__motor, -1., 1., 1000., 2000.)
-        self.__pi_car.set_servo_pulsewidth(self.__motor_pin, real_pwm)
+        self.__cam.capture(self.__image, 'rgb', use_video_port=True)
 
-        real_pwm = self.scale_range(self.__steering_angle, -1., 1., 1000., 2000.)
-        self.__pi_car.set_servo_pulsewidth(self.__steering_servo_pin, real_pwm)
+        current_time = time.time()
+        if current_time - self.__last_action_time >= self.__reward_time_interval:
+            self.__reward -= 5
+        self.__last_action_time = current_time
 
-        self.__get_image()
+        if self.__reward < 0:
+            self.__done = True
+
+        if self.__done:
+            self.__steering_signal, self.__motor_signal = 0., 0.
+        else:
+            self.__steering_signal, self.__motor_signal = action
 
         return self.__image, self.__reward, self.__done, self.__info
 
     def close(self) -> None:
         self.__cam.close()
-
-        self.__pi_car.set_servo_pulsewidth(self.__motor, 0)
-        self.__pi_car.set_servo_pulsewidth(self.__steering_servo_pin, 0)
+        self.__update_pwm(0, 0)
         self.__pi_car.stop()
-
-    def __get_image(self) -> None:
-        self.__cam.capture(self.__image, 'rgb', use_video_port=True)
 
     def __line_interrupt_handle(self) -> None:
         self.__done = True
 
     def __update_reward(self):
+        tire_diameter = 0.05
+
+        current_time = time.time()
+        self.__car_speed = 3.14 * 2 * tire_diameter / (current_time - self.__last_encoder_time) / 1.5
+        self.__last_encoder_time = current_time
         self.__reward += 5
 
+    def __update_pwm(self, steering_signal, motor_signal):
+        real_pwm = self.__scale_range(steering_signal, -1., 1., 1000., 2000.)
+        self.__pi_car.set_servo_pulsewidth(self.__STEERING_SERVO_PIN, real_pwm)
+
+        real_pwm = self.__scale_range(motor_signal, -1., 1., 1000., 2000.)
+        self.__pi_car.set_servo_pulsewidth(self.__MOTOR_PIN, real_pwm)
+
     @staticmethod
-    def scale_range(old_value: float, old_min: float, old_max: float, new_min: float, new_max: float) -> float:
+    def __scale_range(old_value: float, old_min: float, old_max: float, new_min: float, new_max: float) -> float:
         return ((old_value - old_min) / (old_max - old_min)) * (new_max - new_min) + new_min
