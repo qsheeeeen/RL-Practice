@@ -20,7 +20,7 @@ class Dashboard(object):
 
         self.__last_time = time.time()
 
-    def update(self, image: np.ndarray, info: dict):
+    def update(self, image, info: dict):
         y_position = 10
         self.__screen.fill(self.__WHITE)
         finish = False

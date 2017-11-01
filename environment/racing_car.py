@@ -66,6 +66,11 @@ class RacingCar(object):
         self.__cam.capture(self.__image, 'rgb', use_video_port=True)
         self.__reward = 0
         self.__done = False
+        self.__motor_signal = 0
+        self.__steering_signal = 0
+        self.__car_speed = 0
+
+        self.__update_info()
 
         return self.__image, self.__reward, self.__done, self.__info
 
@@ -89,9 +94,12 @@ class RacingCar(object):
         else:
             self.__steering_signal, self.__motor_signal = action
 
+        self.__update_info()
+
         return self.__image, self.__reward, self.__done, self.__info
 
     def close(self) -> None:
+        self.__update_info()
         self.__cam.close()
         self.__update_pwm(0, 0)
         self.__pi_car.stop()
@@ -99,20 +107,26 @@ class RacingCar(object):
     def __line_interrupt_handle(self) -> None:
         self.__done = True
 
-    def __update_reward(self):
+    def __update_reward(self) -> None:
         tire_diameter = 0.05
 
         current_time = time.time()
         self.__car_speed = 3.14 * 2 * tire_diameter / (current_time - self.__last_encoder_time) / 1.5
         self.__last_encoder_time = current_time
+
         self.__reward += 5
 
-    def __update_pwm(self, steering_signal, motor_signal):
+    def __update_pwm(self, steering_signal: float, motor_signal: float) -> None:
         real_pwm = self.__scale_range(steering_signal, -1., 1., 1000., 2000.)
         self.__pi_car.set_servo_pulsewidth(self.__STEERING_SERVO_PIN, real_pwm)
 
         real_pwm = self.__scale_range(motor_signal, -1., 1., 1000., 2000.)
         self.__pi_car.set_servo_pulsewidth(self.__MOTOR_PIN, real_pwm)
+
+    def __update_info(self) -> None:
+        __info_value = self.__reward, self.__motor_signal, self.__steering_signal, self.__car_speed
+        info_name = ('Reward', 'Motor signal:', 'Steering signal:', 'Car speed:')
+        self.__info = dict(zip(info_name, __info_value))
 
     @staticmethod
     def __scale_range(old_value: float, old_min: float, old_max: float, new_min: float, new_max: float) -> float:
