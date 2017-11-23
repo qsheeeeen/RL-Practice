@@ -5,3 +5,4 @@ picamera
 numpy
 pyzmq
 h5py
+keras

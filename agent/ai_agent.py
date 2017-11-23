@@ -13,24 +13,25 @@ from .replay_buffer import ReplayBuffer
 
 
 class AIAgent(object):
-    def __init__(self, state_shape, action_shape):
+    def __init__(self, state_shape, action_shape, train):
         self.state_shape = state_shape
         self.action_shape = action_shape
+        self.train = train
 
-        self.__steering_axis = 4
-        self.__gas_break_axis = 2
+        self.steering_axis = 4
+        self.gas_break_axis = 2
 
         pygame.init()
         pygame.joystick.init()
 
         assert pygame.joystick.get_count() > 0, 'Can not find controller.'
-        self.__controller = pygame.joystick.Joystick(0)
-        self.__controller.init()
+        self.controller = pygame.joystick.Joystick(0)
+        self.controller.init()
 
         self.replay_buffer = ReplayBuffer(10 ** 6)
 
-        self.__actor_model = self.__get_actor_model()
-        self.__critic_model = self.__get_critic_model()
+        self.actor_model = self.get_actor_model()
+        self.critic_model = self.get_critic_model()
 
     def act(self, observation, reward, done):
         steering = None
@@ -38,9 +39,8 @@ class AIAgent(object):
 
         # TODO: Add AI part
 
-
-        controller_steering = self.__controller.get_axis(self.__steering_axis)
-        controller_gas_break = -self.__controller.get_axis(self.__gas_break_axis)
+        controller_steering = self.controller.get_axis(self.steering_axis)
+        controller_gas_break = -self.controller.get_axis(self.gas_break_axis)
 
         if controller_steering != 0.:
             steering = controller_steering
@@ -50,7 +50,7 @@ class AIAgent(object):
 
         return np.array((steering, gas_break), dtype=np.float32)
 
-    def __get_actor_model(self):
+    def get_actor_model(self):
         model = Sequential()
         model.add(Conv2D(32, 3, padding='same', activation='relu', bias_initializer='glorot_normal'))
         model.add(Conv2D(64, 3, padding='same', activation='relu', bias_initializer='glorot_normal'))
@@ -64,7 +64,7 @@ class AIAgent(object):
 
         return model
 
-    def __get_critic_model(self):
+    def get_critic_model(self):
         # TODO learning rate 10 ** -3
         state_input = Input(shape=self.state_shape)
         action_input = Input(shape=self.state_shape)
@@ -77,8 +77,8 @@ class AIAgent(object):
         x2 = Dense(8, activation='relu')(input2)
         added = Add()([x1, x2])
 
-        out = keras.layers.Dense(4)(added)
-        model = keras.models.Model(inputs=[state_input, action_input], outputs=out)
+        out = Dense(4)(added)
+        model = Model(inputs=[state_input, action_input], outputs=out)
 
         model = Sequential()
         model.add(Conv2D(32, 3, padding='same', activation='relu'))
