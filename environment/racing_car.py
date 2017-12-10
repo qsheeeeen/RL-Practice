@@ -75,10 +75,11 @@ class RacingCar(object):
         else:
             steering_signal, motor_signal = action
 
+        motor_signal *= self.motor_limitation
+
         self.car_info['Steering signal'] = steering_signal
         self.car_info['Motor signal'] = motor_signal
 
-        motor_signal *= self.motor_limitation
         self.update_pwm(steering_signal, motor_signal)
 
         self.cam.capture(self.image, 'rgb', use_video_port=True)
