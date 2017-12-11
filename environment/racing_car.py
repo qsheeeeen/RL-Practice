@@ -123,10 +123,12 @@ class RacingCar(object):
     def update_pwm(self, steering_signal, motor_signal):
         def scale_range(old_value, old_min, old_max, new_min, new_max):
         return ((old_value - old_min) / (old_max - old_min)) * (new_max - new_min) + new_min
-    
-        pwm_wave = scale_range(steering_signal, -1, 1, 1000, 2000)
+        
+        # TODO: Servo range.
+        servo_range = 200
+        pwm_wave = scale_range(steering_signal, -1, 1, (1500 - servo_range), (1500 + servo_range))
         self.pi_car.set_servo_pulsewidth(self.STEERING_SERVO_PIN, pwm_wave)
 
-        pwm_wave = scale_range(motor_signal, -1, 1, 1000, 2000)
+        pwm_wave = scale_range(motor_signal, -1, 1, (1500 - servo_range, 1500 + servo_range)
         self.pi_car.set_servo_pulsewidth(self.MOTOR_PIN, pwm_wave)
     
