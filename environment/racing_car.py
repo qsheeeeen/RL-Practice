@@ -31,15 +31,16 @@ class RacingCar(object):
 
         self.update_pwm(0, 0)
 
-        image_width, image_height = (320, 240)
+        self.image_width, self.image_height = (320, 240)
 
-        self.image = np.empty((image_height, image_width, 3), dtype=np.uint8)
+        self.image = np.empty((self.image_height, self.image_width, 3), dtype=np.uint8)
 
         self.cam = picamera.Picamera()
-        self.cam.resolution = image_width, image_height
-        self.cam.framerate = 40
+        self.cam.resolution = 1640, 1232
+        self.cam.framerate = 30
         self.cam.exposure_mode = 'sport'
         self.cam.image_effect = 'denoise'
+        self.cam.meter_mode = 'backlit'
 
         self.car_info = {
             'Steering signal': 0,
@@ -59,7 +60,7 @@ class RacingCar(object):
 
     def reset(self):
         self.update_pwm(0, 0)
-        self.cam.capture(self.image, 'rgb', use_video_port=True)
+        self.cam.capture(self.image, 'rgb', use_video_port=True, resize=(self.image_width, self.image_height))
 
         self.car_info = {
             'Steering signal': 0,
@@ -83,7 +84,7 @@ class RacingCar(object):
 
         self.update_pwm(steering_signal, motor_signal)
 
-        self.cam.capture(self.image, 'rgb', use_video_port=True)
+        self.cam.capture(self.image, 'rgb', use_video_port=True, resize=(self.image_width, self.image_height))
 
         return self.image, self.car_info['Reward'], self.car_info['Done'], self.car_info
 
@@ -120,12 +121,12 @@ class RacingCar(object):
                     self.car_info['Done'] = True
 
     def update_pwm(self, steering_signal, motor_signal):
-        pwm_wave = self.scale_range(steering_signal, -1, 1, 1000, 2000)
+        def scale_range(old_value, old_min, old_max, new_min, new_max):
+        return ((old_value - old_min) / (old_max - old_min)) * (new_max - new_min) + new_min
+    
+        pwm_wave = scale_range(steering_signal, -1, 1, 1000, 2000)
         self.pi_car.set_servo_pulsewidth(self.STEERING_SERVO_PIN, pwm_wave)
 
-        pwm_wave = self.scale_range(motor_signal, -1, 1, 1000, 2000)
+        pwm_wave = scale_range(motor_signal, -1, 1, 1000, 2000)
         self.pi_car.set_servo_pulsewidth(self.MOTOR_PIN, pwm_wave)
-
-    @staticmethod
-    def scale_range(old_value, old_min, old_max, new_min, new_max):
-        return ((old_value - old_min) / (old_max - old_min)) * (new_max - new_min) + new_min
+    
