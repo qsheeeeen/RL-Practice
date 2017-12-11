@@ -39,6 +39,7 @@ class RacingCar(object):
         self.cam.resolution = image_width, image_height
         self.cam.framerate = 40
         self.cam.exposure_mode = 'sport'
+        self.cam.image_effect = 'denoise'
 
         self.car_info = {
             'Steering signal': 0,
