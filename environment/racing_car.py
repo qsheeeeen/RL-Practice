@@ -96,7 +96,7 @@ class RacingCar(object):
     def interrupt_handle(self, gpio, level, tick):
         tire_diameter = 0.05
         # TODO
-        gear_ratio = 1.5
+        gear_ratio = 145 / 35
         encoder_line = 512
 
         if (gpio == self.LEFT_LINE_SENSOR_PIN) or (gpio == self.RIGHT_LINE_SENSOR_PIN):
@@ -123,13 +123,14 @@ class RacingCar(object):
 
     def update_pwm(self, steering_signal, motor_signal):
         def scale_range(old_value, old_min, old_max, new_min, new_max):
-        return ((old_value - old_min) / (old_max - old_min)) * (new_max - new_min) + new_min
-        
+            return ((old_value - old_min) / (old_max - old_min)) * (new_max - new_min) + new_min
+
         # TODO: Servo range.
         servo_range = 200
+        motor_range = 500
+
         pwm_wave = scale_range(steering_signal, -1, 1, (1500 - servo_range), (1500 + servo_range))
         self.pi_car.set_servo_pulsewidth(self.STEERING_SERVO_PIN, pwm_wave)
 
-        pwm_wave = scale_range(motor_signal, -1, 1, (1500 - servo_range, 1500 + servo_range)
+        pwm_wave = scale_range(motor_signal, -1, 1, (1500 - motor_range), (1500 + motor_range))
         self.pi_car.set_servo_pulsewidth(self.MOTOR_PIN, pwm_wave)
-    

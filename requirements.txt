@@ -1,3 +1,4 @@
+blosc
 tensorflow-gpu
 pygame
 pigpio

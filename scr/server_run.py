@@ -1,11 +1,11 @@
 # coding: utf-8
 
-# Think of server as remote.
+# Think server as remote.
 
 import zmq
 
 from agent import ControllerAgent
-from tools.communication import send_zipped_pickle, receive_zipped_pickle
+from tools.communication import send_array, receive_array
 from tools.dashboard import Dashboard
 
 
@@ -14,30 +14,27 @@ def main():
 
     context = zmq.Context()
 
-    result_receiver = context.socket(zmq.PULL)
-    result_receiver.bind("tcp://*:5558")
-
-    order_sender = context.socket(zmq.PUSH)
-    order_sender.connect("tcp://192.168.1.2:5555")
+    socket = context.socket(zmq.REP)
+    socket.bind("tcp://*:5555")
 
     print('Init agent.')
     dashboard = Dashboard()
     agent = ControllerAgent()
 
     while True:
-        print('Wait for result...', end='')
-        data = receive_zipped_pickle(result_receiver)
+        print('Wait for result...', end='\t')
+        data = receive_array(socket)
         print('Received.')
 
         ob, reward, done, info = data
 
-        result = agent.act(ob, reward, done)
+        action = agent.act(ob, reward, done)
 
-        print('Send .order..', end='')
-        send_zipped_pickle(order_sender, result)
+        print('Send action...', end='\t')
+        send_array(socket, action)
         print('Done.')
 
-        dashboard.update(ob, (reward,) + info)
+        dashboard.update(ob, info)
 
 
 if __name__ == '__main__':

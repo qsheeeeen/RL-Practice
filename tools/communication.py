@@ -1,47 +1,93 @@
 # coding: utf-8
 
-import pickle
 import time
-import zlib
 
+import blosc
 import numpy as np
 import zmq
 
 
-def send_zipped_pickle(socket, obj, flags=0, protocol=-1):
-    """pickle an object, and zip the pickle before sending it"""
-    p = pickle.dumps(obj, protocol)
-    z = zlib.compress(p)
-    return socket.send(z, flags=flags)
+def send_array(socket, array):
+    """Pack the array and send it"""
+    packed_array = blosc.pack_array(array)
+    return socket.send(packed_array)
 
 
-def receive_zipped_pickle(socket, flags=0, protocol=-1):
-    """inverse of send_zipped_pickle"""
-    z = socket.recv(flags)
-    p = zlib.decompress(z)
-    return pickle.loads(p)
+def receive_array(socket):
+    """Receive the pack and unpack it."""
+    packed_array = socket.recv()
+    return blosc.unpack_array(packed_array)
+
+
+def client_run():
+    context = zmq.Context()
+
+    socket = context.socket(zmq.REQ)
+    socket.connect("tcp://localhost:5555")
+
+    array = np.random.randint(0, 256, (1, 320, 640, 3), np.uint8)
+
+    print('Send data for first time...', end='\t')
+    send_array(socket, array)
+    print('Com success.')
+
+    for i in range(20):
+        start = time.time()
+
+        print('Wait for action...', end='\t')
+        b = receive_array(socket)
+        print('Received.')
+
+        print('')
+        print(i)
+        print('FPS:%f' % (1 / (time.time() - start)))
+        print("Checking array...")
+        print("Okay" if (array == b).all() else "Failed")
+
+        array = np.random.randint(0, 256, (1, 320, 640, 3), np.uint8)
+
+        print('Send result...', end='\t')
+        send_array(socket, array)
+        print('Done.')
+
+
+def server_run():
+    context = zmq.Context()
+
+    socket = context.socket(zmq.REP)
+    socket.bind("tcp://*:5555")
+
+    while True:
+        print('Wait for result...', end='\t')
+        b = receive_array(socket)
+        print('Received.')
+
+        print('Send action...', end='\t')
+        send_array(socket, b)
+        print('Done.')
 
 
 def main():
     context = zmq.Context()
 
-    receiver = context.socket(zmq.PULL)
-    receiver.bind("tcp://*:5555")
+    receiver = context.socket(zmq.REP)
+    receiver.bind("tcp://*:55555")
 
-    sender = context.socket(zmq.PUSH)
-    sender.connect("tcp://localhost:5555")
+    sender = context.socket(zmq.REQ)
+    sender.connect("tcp://localhost:55555")
 
-    array = np.ones((320, 640, 3), np.float32)
+    array = np.random.randint(0, 256, (1, 320, 640, 3), np.uint8)
 
     start = time.time()
 
-    send_zipped_pickle(sender, array)
+    send_array(sender, array)
 
-    B = receive_zipped_pickle(receiver)
+    b = receive_array(receiver)
 
-    print(time.time() - start)
-    print("Checking zipped pickle...")
-    print("Okay" if (array == B).all() else "Failed")
+    print('FPS:', end='')
+    print(1 / (time.time() - start))
+    print("Checking array...", end='\t')
+    print("Okay" if (array == b).all() else "Failed")
 
 
 if __name__ == '__main__':
