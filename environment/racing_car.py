@@ -95,7 +95,6 @@ class RacingCar(object):
 
     def interrupt_handle(self, gpio, level, tick):
         tire_diameter = 0.05
-        # TODO
         gear_ratio = 145 / 35
         encoder_line = 512
 
