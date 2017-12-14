@@ -107,7 +107,7 @@ class RacingCar(object):
                 self.encoder_pulse_count += 1
 
             if level == pigpio.TIMEOUT:
-                s = self.encoder_pulse_count / encoder_line * 3.14 * tire_diameter
+                s = self.encoder_pulse_count / encoder_line * np.pi * tire_diameter
                 t = self.SPEED_UPDATE_INTERVAL / 1000
                 self.car_info['Car speed'] = s / t * gear_ratio
                 self.encoder_pulse_count = 0
