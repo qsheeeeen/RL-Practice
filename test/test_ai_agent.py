@@ -3,7 +3,7 @@ import gym
 
 from agent import AIAgent
 
-
+# TODO: usd Enduro in gym
 def main():
     agent = AIAgent()
     env = gym.Env()
