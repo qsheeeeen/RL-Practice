@@ -4,14 +4,10 @@
 
 import pygame
 
-# Define some colors
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 
 
-# This is a simple class that will help us print to the screen
-# It has nothing to do with the joysticks, just outputting the
-# information.
 class text_print:
     def __init__(self):
         self.reset()
@@ -121,13 +117,6 @@ while not done:
 
         text_print.unindent()
 
-    # ALL CODE TO DRAW SHOULD GO ABOVE THIS COMMENT
-
-    # Go ahead and update the screen with what we've drawn.
     pygame.display.flip()
 
-
-# Close the window and quit.
-# If you forget this line, the program will 'hang'
-# on exit if running from IDLE.
 pygame.quit()

@@ -1,9 +1,21 @@
+# For Raspberry Pi:
 blosc
-tensorflow-gpu
-pygame
 pigpio
 picamera
 numpy
 pyzmq
-h5py
+
+# For server running:
+tensorflow-gpu
+pygame
 keras
+numpy
+pyzmq
+blosc
+
+# For server training:
+h5py
+
+# For test DDPG in virtual environment:
+gym
+

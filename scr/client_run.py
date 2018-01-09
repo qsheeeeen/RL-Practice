@@ -1,26 +1,20 @@
-# coding: utf-8
-
-# Think car as local.
-
 import zmq
 
 from environment import RacingCar
-from tools.communication import send_array, receive_array
+from tools import send_array, receive_array
 
 
-def main():
-    print('Init communication.')
-
-    context = zmq.Context()
-
-    socket = context.socket(zmq.REQ)
-    socket.connect("tcp://192.168.1.2:5555")
-
+def client_run():
     print('Init environment.')
     env = RacingCar()
     data = env.reset()
 
-    print('Send data for first time...', end='\t')
+    print('Init communication.')
+    context = zmq.Context()
+    socket = context.socket(zmq.REQ)
+    socket.connect("tcp://192.168.1.2:5555")
+
+    print('Send data for the first time...', end='\t')
     send_array(socket, data)
     print('Com success.')
 
@@ -37,4 +31,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    client_run()

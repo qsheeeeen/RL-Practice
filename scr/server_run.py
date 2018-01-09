@@ -1,31 +1,32 @@
-# coding: utf-8
-
-# Think server as remote.
-
+import numpy as np
 import zmq
 
-from agent import ControllerAgent
-from tools.communication import send_array, receive_array
-from tools.dashboard import Dashboard
+from agent import JoystickAgent
+from tools import Dashboard
+from tools import send_array, receive_array
 
 
-def main():
+def server_run():
+    print('Init Dashboard.')
+    dashboard = Dashboard()
+
+    print('Init Agnet')
+    sample_state = np.random.randint(0, 256, (320, 240, 3), dtype=np.uint8)
+    sample_action = np.random.random_sample(2)
+
+    agent = JoystickAgent(sample_state, sample_action)
+
     print('Init communication.')
-
     context = zmq.Context()
-
     socket = context.socket(zmq.REP)
     socket.bind("tcp://*:5555")
 
-    print('Init agent.')
-    dashboard = Dashboard()
-    agent = ControllerAgent()
+    print('Wait for the first result...', end='\t')
+    data = receive_array(socket)
+    print('Com success.')
 
-    while True:
-        print('Wait for result...', end='\t')
-        data = receive_array(socket)
-        print('Received.')
-
+    close = False
+    while not close:
         ob, reward, done, info = data
 
         action = agent.act(ob, reward, done)
@@ -34,8 +35,12 @@ def main():
         send_array(socket, action)
         print('Done.')
 
-        dashboard.update(ob, info)
+        print('Wait for result...', end='\t')
+        data = receive_array(socket)
+        print('Received.')
+
+        close = dashboard.update(ob, info)
 
 
 if __name__ == '__main__':
-    main()
+    server_run()

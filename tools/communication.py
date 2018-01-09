@@ -1,6 +1,7 @@
 # coding: utf-8
 
 import time
+from multiprocessing import Process
 
 import blosc
 import numpy as np
@@ -27,7 +28,7 @@ def client_run():
 
     array = np.random.randint(0, 256, (1, 320, 640, 3), np.uint8)
 
-    print('Send data for first time...', end='\t')
+    print('Send data for the first time...', end='\t')
     send_array(socket, array)
     print('Com success.')
 
@@ -57,37 +58,30 @@ def server_run():
     socket = context.socket(zmq.REP)
     socket.bind("tcp://*:5555")
 
-    while True:
-        print('Wait for result...', end='\t')
-        b = receive_array(socket)
-        print('Received.')
+    print('Wait for the first result...', end='\t')
+    b = receive_array(socket)
+    print('Com success.')
 
+    for i in range(20):
         print('Send action...', end='\t')
         send_array(socket, b)
         print('Done.')
 
+        print('Wait for result...', end='\t')
+        b = receive_array(socket)
+        print('Received.')
+
 
 def main():
-    context = zmq.Context()
+    # Test. Send data through different process.
+    p1 = Process(target=client_run)
+    p2 = Process(target=server_run)
 
-    receiver = context.socket(zmq.REP)
-    receiver.bind("tcp://*:55555")
+    p1.start()
+    p2.start()
 
-    sender = context.socket(zmq.REQ)
-    sender.connect("tcp://localhost:55555")
-
-    array = np.random.randint(0, 256, (1, 320, 640, 3), np.uint8)
-
-    start = time.time()
-
-    send_array(sender, array)
-
-    b = receive_array(receiver)
-
-    print('FPS:', end='')
-    print(1 / (time.time() - start))
-    print("Checking array...", end='\t')
-    print("Okay" if (array == b).all() else "Failed")
+    p1.join()
+    p2.join()
 
 
 if __name__ == '__main__':
