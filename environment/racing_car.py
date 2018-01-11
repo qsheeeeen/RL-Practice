@@ -16,7 +16,6 @@ class RacingCar(object):
 
         TODO:
             Add IMU for detecting shock (or crash).
-            Add button controled shut down.
 
         Notes:
             Hardware:
@@ -135,6 +134,7 @@ class RacingCar(object):
 
         if self._car_info['Done']:
             steering_signal, motor_signal = 0, 0
+            self._car_info['Reward'] = -1
         else:
             steering_signal, motor_signal = action
 

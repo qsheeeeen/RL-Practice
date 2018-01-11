@@ -1,19 +1,18 @@
 # For Raspberry Pi:
 blosc
+numpy
 pigpio
 picamera
-numpy
 pyzmq
 
 # For server running:
-tensorflow-gpu
-pygame
-keras
-numpy
-pyzmq
 blosc
+numpy
+pygame
+pyzmq
+torch
 
-# For server training:
+# For collecting data (and train the model yourself):
 h5py
 
 # For test DDPG in virtual environment:

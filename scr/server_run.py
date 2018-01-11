@@ -10,24 +10,28 @@ def server_run():
     print('Init Dashboard.')
     dashboard = Dashboard()
 
-    print('Init Agnet')
-    sample_state = np.random.randint(0, 256, (320, 240, 3), dtype=np.uint8)
-    sample_action = np.random.random_sample(2)
-
-    agent = JoystickAgent(sample_state, sample_action)
-
     print('Init communication.')
     context = zmq.Context()
     socket = context.socket(zmq.REP)
     socket.bind("tcp://*:5555")
 
-    print('Wait for the first result...', end='\t')
+    print('Wait for the first result...')
     data = receive_array(socket)
     print('Com success.')
+
+    print('Init Agent')
+    sample_state = np.random.randint(0, 256, (320, 240, 3), dtype=np.uint8)
+    sample_action = np.random.random_sample(2)
+
+    agent = JoystickAgent(sample_state, sample_action)
+
+    input('Press "Enter" to start...')
 
     close = False
     while not close:
         ob, reward, done, info = data
+
+        close = dashboard.update(ob, info)
 
         action = agent.act(ob, reward, done)
 
@@ -39,7 +43,7 @@ def server_run():
         data = receive_array(socket)
         print('Received.')
 
-        close = dashboard.update(ob, info)
+    agent.close()
 
 
 if __name__ == '__main__':

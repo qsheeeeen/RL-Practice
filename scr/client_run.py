@@ -14,20 +14,26 @@ def client_run():
     socket = context.socket(zmq.REQ)
     socket.connect("tcp://192.168.1.2:5555")
 
-    print('Send data for the first time...', end='\t')
+    print('Send data for the first time...')
     send_array(socket, data)
+
+    print('Wait for action...', end='\t')
+    action = receive_array(socket)
     print('Com success.')
 
-    while True:
-        print('Wait for action...', end='\t')
-        action = receive_array(socket)
-        print('Received.')
+    try:
+        while True:
+            data = env.step(action)
 
-        data = env.step(action)
+            print('Send result...', end='\t')
+            send_array(socket, data)
+            print('Done.')
 
-        print('Send result...', end='\t')
-        send_array(socket, data)
-        print('Done.')
+            print('Wait for action...', end='\t')
+            action = receive_array(socket)
+            print('Received.')
+    finally:
+        env.close()
 
 
 if __name__ == '__main__':
