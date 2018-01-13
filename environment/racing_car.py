@@ -1,13 +1,11 @@
 # coding: utf-8
-import os
+from os import system
+from time import sleep
 
-import numpy as np
 import picamera
 import pigpio
-
-
-def scale_range(old_value, old_min, old_max, new_min, new_max):
-    return ((old_value - old_min) / (old_max - old_min)) * (new_max - new_min) + new_min
+from numpy import empty, float32, pi
+from numpy.random import rand
 
 
 class RacingCar(object):
@@ -53,7 +51,9 @@ class RacingCar(object):
         self._REWARD_UPDATE_INTERVAL = 500
 
         # Setup hardware controlling. TODO: RISING_EDGE or FALLING_EDGE
-        os.system('sudo pigpiod')
+        system('sudo pigpiod')
+        sleep(1)
+
         self._pi = pigpio.pi()
         self._pi.set_watchdog(self._ENCODER_PUL_PIN, self._SPEED_UPDATE_INTERVAL)
         self._pi.set_watchdog(self._ENCODER_ZERO_PIN, self._REWARD_UPDATE_INTERVAL)
@@ -68,7 +68,7 @@ class RacingCar(object):
 
         # Setup camera.
         self._image_width, self._image_height = (320, 240)
-        self._image = np.empty((self._image_height, self._image_width, 3), dtype=np.uint8)
+        self._image = empty((self._image_height, self._image_width, 3), dtype=float32)
 
         self._cam = picamera.Picamera()
         self._cam.resolution = 1640, 1232
@@ -89,9 +89,8 @@ class RacingCar(object):
         self._encoder_pulse_count = 0
 
         # For init agent.
-        self.sample_state = np.random.randint(0, 256, (self._image_height, self._image_width, 3), dtype=np.uint8)
-        self.sample_action = np.random.random_sample(2)
-        self.sample_action = scale_range(self.sample_action, 0, 1, -1, 1)
+        self.sample_state = rand(self._image_height, self._image_width, 3).astype(float32)
+        self.sample_action = (rand(2) * 2 - 1).astype(float32)
 
     def reset(self):
         """Reset environment.
@@ -101,7 +100,7 @@ class RacingCar(object):
 
         """
         self._update_pwm(0, 0)
-        self._cam.capture(self._image, 'rgb', use_video_port=True, resize=(self._image_width, self._image_height))
+        self._capture_image()
 
         self._car_info = {
             'Steering signal': 0,
@@ -129,8 +128,10 @@ class RacingCar(object):
             AssertionError: When input array is not in correct shape or value (eg. > 1).
 
         """
-        assert action.shape == (2,), 'Incorrect input shape.'
-        assert action.max() <= 1, 'Incorrect input value.'
+        assert len(action) == 2, 'Incorrect input shape'
+
+        if not isinstance(action, tuple):
+            action = tuple(action)
 
         if self._car_info['Done']:
             steering_signal, motor_signal = 0, 0
@@ -145,7 +146,7 @@ class RacingCar(object):
 
         self._update_pwm(steering_signal, motor_signal)
 
-        self._cam.capture(self._image, 'rgb', use_video_port=True, resize=(self._image_width, self._image_height))
+        self._capture_image()
 
         return self._image, self._car_info['Reward'], self._car_info['Done'], self._car_info
 
@@ -155,7 +156,12 @@ class RacingCar(object):
         self._update_pwm(0, 0)
         self._pi.stop()
 
-    def _interrupt_handle(self, gpio, level, tick):
+    def _capture_image(self):
+        # TODO: Check image value.
+        self._cam.capture(self._image, 'rgb', use_video_port=True, resize=(self._image_width, self._image_height))
+        self._image = self._image / 256.
+
+    def _interrupt_handle(self, gpio, level):
         if (gpio == self._LEFT_LINE_SENSOR_PIN) or (gpio == self._RIGHT_LINE_SENSOR_PIN):
             self._car_info['Done'] = True
 
@@ -164,7 +170,7 @@ class RacingCar(object):
                 self._encoder_pulse_count += 1
 
             if level == pigpio.TIMEOUT:
-                s = self._encoder_pulse_count / self._ENCODER_LINE * np.pi * self._TIRE_DIAMETER
+                s = self._encoder_pulse_count / self._ENCODER_LINE * pi * self._TIRE_DIAMETER
                 t = self._SPEED_UPDATE_INTERVAL / 1000
                 self._car_info['Car speed'] = s / t * self._GEAR_RATIO
                 self._encoder_pulse_count = 0
@@ -179,6 +185,10 @@ class RacingCar(object):
                     self._car_info['Done'] = True
 
     def _update_pwm(self, steering_signal, motor_signal):
+
+        def scale_range(old_value, old_min, old_max, new_min, new_max):
+            return ((old_value - old_min) / (old_max - old_min)) * (new_max - new_min) + new_min
+
         pwm_wave = scale_range(steering_signal, -1, 1, (1500 - self._SERVO_RANGE), (1500 + self._SERVO_RANGE))
         self._pi.set_servo_pulsewidth(self._STEERING_SERVO_PIN, pwm_wave)
 

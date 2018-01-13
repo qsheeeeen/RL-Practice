@@ -1,20 +1,20 @@
-# For Raspberry Pi:
-blosc
+# Basic:
+torch
 numpy
+
+# Additionally:
+# For test DDPG in virtual environment:
+gym
+
+# For running in real world:
+# On Raspberry Pi:
+blosc
 pigpio
 picamera
 pyzmq
 
-# For server running:
+# On server:
 blosc
-numpy
-pygame
 pyzmq
-torch
-
-# For collecting data (and train the model yourself):
-h5py
-
-# For test DDPG in virtual environment:
-gym
+pygame
 

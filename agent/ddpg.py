@@ -1,175 +1,164 @@
 # coding: utf-8
-import numpy as np
+
 import torch
-from torch import nn, optim
+from torch import nn, optim, cuda
 from torch.autograd import Variable
-from torch.nn import functional
 
 from .core import Agent
 from .replay_buffer import ReplayBuffer
 
 
-class ActorNetwork(torch.nn.Module):
-    """
-    TODO: uniform distribution
-    """
-
-    def __init__(self):
-        super(ActorNetwork, self).__init__()
-        self.conv1 = nn.Conv2d(3, 32, kernel_size=5, stride=2)
-        self.bn1 = nn.BatchNorm2d(32)
-        self.conv2 = nn.Conv2d(32, 32, kernel_size=5, stride=2)
-        self.bn2 = nn.BatchNorm2d(32)
-        self.conv3 = nn.Conv2d(32, 32, kernel_size=5, stride=2)
-        self.bn3 = nn.BatchNorm2d(32)
-        self.fc1 = nn.Linear(64 * 5 * 5, 512)
-        self.fc2 = nn.Linear(512, 2)
-
-    def forward(self, x):
-        x = functional.relu(self.bn1(self.conv1(x)))
-        x = functional.relu(self.bn2(self.conv2(x)))
-        x = functional.relu(self.bn3(self.conv3(x)))
-        x = functional.relu(self.fc1(x))
-        x = functional.tanh(self.fc2(x))
-
-        return x
+# TODO:
+def init_weights(m):
+    print(m)
+    m.weight.data.fill_(1.0)
+    print(m.weight)
 
 
-class CriticNetwork(nn.Module):
-    def __init__(self):
-        super(CriticNetwork, self).__init__()
-        self.conv1 = nn.Conv2d(3, 16, kernel_size=5, stride=2)
-        self.bn1 = nn.BatchNorm2d(16)
-        self.conv2 = nn.Conv2d(16, 32, kernel_size=5, stride=2)
-        self.bn2 = nn.BatchNorm2d(32)
-        self.conv3 = nn.Conv2d(32, 64, kernel_size=5, stride=2)
-        self.bn3 = nn.BatchNorm2d(64)
-        self.head = nn.Linear(448, 2)
-
-    def forward(self, x):
-        assert len(x) == 1, 'Incorrect input'
-        x = functional.relu(self.bn1(self.conv1(x)))
-        x = functional.relu(self.bn2(self.conv2(x)))
-        x = functional.relu(self.bn3(self.conv3(x)))
-
-        return self.head(x.view(x.size(0), -1))
-
-
-class Critic(object):
-    def __init__(self):
-        self.model = CriticNetwork()
-
-        self.loss = nn.functional.mse_loss()
-
-        if torch.cuda.is_available():
-            self.model.cuda()
-
-
-class DDPG(Agent):
-    """
-    TODO: weights decay
-    """
-
+class DDPGAgent(Agent):
     def __init__(self,
+                 actor_net,
+                 critic_net,
+                 actor_lr=1e-4,
+                 critic_lr=1e-3,
                  batch_size=16,
                  buffer_size=1e6,
-                 discounting_factor=0.99,
-                 learning_factor=0.001,
-                 train=True, ):
-
-        self._actor = ActorNetwork()
-        self._target_actor = self._actor.copy()
-
-        self._actor_optimizer = optim.Adam(self._critic.parameters(), lr=1e-4)
-        self._actor_criterion = nn.MSELoss()
-
-        self._critic = CriticNetwork()
-        self._target_critic = self._critic.copy()
-
-        self._critic_optimizer = optim.Adam(self._critic.parameters(), lr=1e-3)
-        self._critic_criterion = nn.MSELoss()
+                 discount_factor=0.99,
+                 tau=0.001,
+                 train=True,
+                 load=False,
+                 weight_folder='./weights', ):
 
         self._batch_size = batch_size
-        self._discounting_factor = discounting_factor
+        self._discount_factor = discount_factor
+        self._tau = tau
         self._train = train
-        self._learning_factor = learning_factor
+        self._load = load
+        self._weight_folder = weight_folder
 
-        if torch.cuda.is_available():
-            # TODO
-            pass
+        self._actor = actor_net
+        self._critic = critic_net
+
+        self._actor.float()
+        self._critic.float()
+
+        if cuda.is_available():
+            print('Using GPU.')
+            self._actor.cuda()
+            self._critic.cuda()
+
+        else:
+            print('Using CPU.')
+            self._actor.cpu()
+            self._critic.cpu()
+
+        # TODO:
+        if self._load:
+            self.load()
+
+        self._target_actor = self._actor.copy()
+        self._target_critic = self._critic.copy()
+
+        self._target_actor.eval()
+        self._target_critic.eval()
+
+        if self._train:
+            self._actor.train()
+            self._critic.train()
+        else:
+            self._actor.eval()
+            self._critic.eval()
+
+        self._actor_optimizer = optim.Adam(self._critic.parameters(), lr=actor_lr)
+        self._critic_optimizer = optim.Adam(self._critic.parameters(), lr=critic_lr)
+        self._critic_criterion = nn.MSELoss()
 
         self._replay_buffer = ReplayBuffer(buffer_size)
 
-        self._last_state = None
-        self._last_action = None
-        self._last_reward = None
+        self._last_state_array = None
+        self._last_action_array = None
+        self._last_reward_array = None
 
-    def act(self, state, reward, done):
+    def act(self, state_array, reward, done):
         """
+        TODO:
+            Handle 'done'.
+            Parameter level noise.
 
         Args:
-            state (np.ndarray):
+            state_array :
             reward (float):
             done (bool):
 
         Returns:
-            np.ndarray
 
         """
 
-        state = Variable(torch.from_numpy(state).float().unsqueeze(0))
-
-        if self._train and self._last_state and self._last_action and self._last_reward:
+        if self._train:
             # Store transition.
-            self._replay_buffer.store(self._last_state, self._last_action, self._last_reward, state)
+            if self._last_state_array and self._last_action_array and self._last_reward_array:
+                self._replay_buffer.store(self._last_state_array,
+                                          self._last_action_array,
+                                          self._last_reward_array,
+                                          state_array)
 
-            # Sample a random minibatch.
-            (last_state_batch,
-             last_action_batch,
-             last_reward_batch,
-             state_batch) = self._replay_buffer.sample(self._batch_size)
+            # Sample a random mini-batch.
+            samples = self._replay_buffer.sample(self._batch_size)
 
-            last_state_batch = Variable(torch.from_numpy(last_state_batch))
-            last_action_batch = Variable(torch.from_numpy(last_action_batch))
-            last_reward_batch = Variable(torch.from_numpy(last_reward_batch))
-            state_batch = Variable(torch.from_numpy(state_batch))
+            if samples:
+                (last_state_batch_array, last_action_batch_array, last_reward_batch_array, state_batch_array) = samples
 
-            # Gey y.
-            y = self._target_actor(state_batch)
-            y = last_reward_batch + self._discounting_factor * self._target_critic(state_batch, y)
+                # Gey y.
+                y = self._target_actor(state_batch_array)
+                y = last_reward_batch_array + self._discount_factor * self._target_critic(state_batch_array, y)
 
-            # Update critic:
-            self._critic_optimizer.zero_grad()
+                # Update critic:
+                self._critic_optimizer.zero_grad()
 
-            loss = self._critic_criterion(self._critic(last_state_batch, last_action_batch), y)
-            loss.backward()
+                critic_loss = self._critic_criterion(self._critic(last_state_batch_array, last_action_batch_array), y)
+                critic_loss.backward()
 
-            self._critic_optimizer.step()
+                self._critic_optimizer.step()
 
-            # Update actor.
-            self._actor.zero_grad()
-            loss = -self._critic([state_batch, self._actor(state_batch)])
-            loss = loss.mean()
-            loss.backward()
-            self._actor_optimizer.step()
+                # Update actor.
+                self._actor.zero_grad()
+                actor_loss = (-self._critic([state_batch_array, self._actor(state_batch_array)])).mean()
+                actor_loss.backward()
+                self._actor_optimizer.step()
 
-            # Update target critic.
-            for f_t, f in self._target_critic.parameters(), self._critic.parameters():
-                f_t.data = self._learning_factor * f.data + (1 - self._learning_factor) * f_t.data
+                # Update target critic.
+                for f_t, f in self._target_critic.parameters(), self._critic.parameters():
+                    f_t.data = self._tau * f.data + (1 - self._tau) * f_t.data
 
-            # Update target actor.
-            for f_t, f in self._target_actor.parameters(), self._actor.parameters():
-                f_t.data = self._learning_factor * f.data + (1 - self._learning_factor) * f_t.data
+                # Update target actor.
+                for f_t, f in self._target_actor.parameters(), self._actor.parameters():
+                    f_t.data = self._tau * f.data + (1 - self._tau) * f_t.data
 
-        # Select action using actor.
-        action = self._actor(state)
+            # Select action using actor.
+            state = Variable(torch.from_numpy(state_array).float, requires_grad=False).unsqueeze(0)
+
+        else:
+            state = Variable(torch.from_numpy(state_array).float, volatile=True).unsqueeze(0)
+
+        action_array = self._actor(state).numpy()
 
         # Execute Action.
-        self._last_state = state
-        self._last_action = action
-        self._last_reward = reward
+        self._last_state_array = state_array
+        self._last_action_array = action_array
+        self._last_reward_array = reward
 
-        return action.numpy()
+        return action_array
 
     def close(self):
+        # TODO: Save weight.
         pass
+
+    def save(self):
+        torch.save(self._actor.state_dict(), self._weight_folder)
+
+    def load(self):
+        self._critic.load_state_dict(torch.load(self._weight_folder))
+        self._actor.load_state_dict(torch.load(self._weight_folder))
+
+        self._target_actor = self._actor.copy()
+        self._target_critic = self._critic.copy()

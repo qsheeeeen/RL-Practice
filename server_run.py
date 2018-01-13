@@ -1,5 +1,5 @@
 import numpy as np
-import zmq
+from zmq import Context, REP
 
 from agent import JoystickAgent
 from tools import Dashboard
@@ -7,19 +7,26 @@ from tools import send_array, receive_array
 
 
 def server_run():
+    print('Run as server.')
+
+    port = str(input('Enter the server port. Default: 5555.'))
+
+    if not port:
+        port = '5555'
+
     print('Init Dashboard.')
     dashboard = Dashboard()
 
     print('Init communication.')
-    context = zmq.Context()
-    socket = context.socket(zmq.REP)
-    socket.bind("tcp://*:5555")
+    context = Context()
+    socket = context.socket(REP)
+    socket.bind('tcp://*:' + port)
 
     print('Wait for the first result...')
     data = receive_array(socket)
     print('Com success.')
 
-    print('Init Agent')
+    print('Init Agent')  # TODO
     sample_state = np.random.randint(0, 256, (320, 240, 3), dtype=np.uint8)
     sample_action = np.random.random_sample(2)
 

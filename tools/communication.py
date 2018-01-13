@@ -26,7 +26,7 @@ def client_run():
     socket = context.socket(zmq.REQ)
     socket.connect("tcp://localhost:5555")
 
-    array = np.random.randint(0, 256, (1, 320, 640, 3), np.uint8)
+    array = np.random.rand(1, 240, 320, 3).astype(np.float32)
 
     print('Send data for the first time...', end='\t')
     send_array(socket, array)
@@ -39,13 +39,13 @@ def client_run():
         b = receive_array(socket)
         print('Received.')
 
-        print('')
+        print()
         print(i)
-        print('FPS:%f' % (1 / (time.time() - start)))
+        print('Time used: %f' % (time.time() - start))
         print("Checking array...")
         print("Okay" if (array == b).all() else "Failed")
 
-        array = np.random.randint(0, 256, (1, 320, 640, 3), np.uint8)
+        array = np.random.rand(1, 240, 320, 3).astype(np.float32)
 
         print('Send result...', end='\t')
         send_array(socket, array)

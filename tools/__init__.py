@@ -1,3 +1,2 @@
-from .communication import receive_array
-from .communication import send_array
+from .communication import receive_array, send_array
 from .dashboard import Dashboard

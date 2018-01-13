@@ -1,3 +1,3 @@
 # coding: utf-8
-from .ddpg import DDPG
+from .ddpg import DDPGAgent
 from .joystick_agent import JoystickAgent

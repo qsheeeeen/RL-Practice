@@ -8,41 +8,44 @@ import pygame
 
 class Dashboard(object):
     def __init__(self):
-        self.BLACK = (0, 0, 0)
-        self.WHITE = (255, 255, 255)
+        self._BLACK = (0, 0, 0)
+        self._WHITE = (255, 255, 255)
 
         pygame.init()
 
-        self.screen = pygame.display.set_mode([600, 240])
+        self._screen = pygame.display.set_mode([600, 240])
         pygame.display.set_caption("Dashboard")
 
-        self.screen.fill(self.WHITE)
-        self.font = pygame.font.Font(None, 30)
+        self._screen.fill(self._WHITE)
+        self._font = pygame.font.Font(None, 30)
 
         self.last_time = time.time()
 
     def update(self, image, info):
+        if image.max() <= 1:
+            image *= 256
+            
         y_position = 10
-        self.screen.fill(self.WHITE)
+        self._screen.fill(self._WHITE)
 
         image_surface = pygame.surfarray.make_surface(image)
-        self.screen.blit(image_surface, (0, 0))
+        self._screen.blit(image_surface, (0, 0))
 
         current_time = time.time()
         fps = 1. / (current_time - self.last_time)
-        self.screen_print('FPS:', [330, y_position])
-        self.screen_print(fps, [530, y_position])
+        self._screen_print('FPS:', [330, y_position])
+        self._screen_print(fps, [530, y_position])
         self.last_time = current_time
 
         y_position += 30
         for head in info.keys():
-            self.screen_print(head + ':', [330, y_position])
+            self._screen_print(head + ':', [330, y_position])
             y_position += 30
 
         y_position = 10
         y_position += 30
         for data in info.values():
-            self.screen_print(data, [530, y_position])
+            self._screen_print(data, [530, y_position])
             y_position += 30
 
         pygame.display.flip()
@@ -51,12 +54,12 @@ class Dashboard(object):
             if event.type == pygame.QUIT:
                 return True
 
-    def screen_print(self, string, position):
+    def _screen_print(self, string, position):
         if isinstance(string, float):
-            text_bit_map = self.font.render(str(string)[:6], True, self.BLACK)
+            text_bit_map = self._font.render(str(string)[:6], True, self._BLACK)
         else:
-            text_bit_map = self.font.render(str(string), True, self.BLACK)
-        self.screen.blit(text_bit_map, position)
+            text_bit_map = self._font.render(str(string), True, self._BLACK)
+        self._screen.blit(text_bit_map, position)
 
 
 if __name__ == '__main__':
@@ -67,10 +70,12 @@ if __name__ == '__main__':
 
     done = False
     while not done:
-        img = np.random.randint(0, 255, (320, 240, 3), np.uint8)
+        img = np.random.rand(320, 240, 3).astype(np.float32)
 
         name = ('Motor signal', 'Steering signal', 'Car speed')
         num = (random.random(), random.random(), random.random())
         inf = dict(zip(name, num))
 
         done = dashboard.update(img, inf)
+
+    print('Closed.')
