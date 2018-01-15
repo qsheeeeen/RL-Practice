@@ -39,13 +39,9 @@ To make the whole system work
 
 ## 4. Next stage
 
-1:10 RC Model.
+Jetson TX2 on a 1:10 RC Model car.
 
-Jetson TX2.
-
-Maybe drift?
-
-Stay tuned!
+Maybe drift? Stay tuned!
 
 ## Reference
 [Continuous control with deep reinforcement learning](https://arxiv.org/abs/1509.02971)
