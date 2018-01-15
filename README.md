@@ -52,6 +52,8 @@ Maybe drift? Stay tuned!
 
 [Noisy Networks for Exploration](https://arxiv.org/abs/1706.10295)
 
+[Deep reinforcement learning from human preferences](https://arxiv.org/abs/1706.03741)
+
 ## License
 This project is released under MIT License.
 Please review [License](LICENSE) file for more details.
