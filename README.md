@@ -28,7 +28,7 @@ Depending on what you intend to do, different package are needed.
 See [requirements.txt](requirements.txt) for more detail.
 To make the whole system work 
 `numpy`, `pyzmq`, `blosc`, `pigpio` and `picamera` should be installed on Raspberry Pi.
-`numpy`, `pyzmq`, `blosc`, `pygame` and `torch` should be installed on PC.
+`numpy`, `pyzmq`, `blosc`, `pygame` and `torch`(pytorch) should be installed on PC.
 ## 3. Run
 
 ### 3.1 Gather training data
@@ -45,6 +45,8 @@ Maybe drift? Stay tuned!
 
 ## Reference
 [Continuous control with deep reinforcement learning](https://arxiv.org/abs/1509.02971)
+
+[Proximal Policy Optimization Algorithms](https://arxiv.org/abs/1707.06347)
 
 [Parameter Space Noise for Exploration](https://arxiv.org/abs/1706.01905)
 
