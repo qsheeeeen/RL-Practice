@@ -35,7 +35,7 @@ To make the whole system work
 
 ### 3.2 Train in virtual environment
 
-### 3.3 Run in real world
+### 3.3 Train in real world
 
 ## 4. Next stage
 
