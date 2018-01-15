@@ -50,6 +50,8 @@ Maybe drift? Stay tuned!
 
 [Parameter Space Noise for Exploration](https://arxiv.org/abs/1706.01905)
 
+[Noisy Networks for Exploration](https://arxiv.org/abs/1706.10295)
+
 ## License
 This project is released under MIT License.
 Please review [License](LICENSE) file for more details.
