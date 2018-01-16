@@ -1,3 +1,5 @@
+# coding: utf-8
+
 from zmq import Context, REQ
 
 from environment import RacingCar

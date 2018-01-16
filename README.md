@@ -27,8 +27,9 @@ I run it on a gaming laptop with GTX 980m. It performs quite well.
 Depending on what you intend to do, different package are needed.
 See [requirements.txt](requirements.txt) for more detail.
 To make the whole system work 
-`numpy`, `pyzmq`, `blosc`, `pigpio` and `picamera` should be installed on Raspberry Pi.
-`numpy`, `pyzmq`, `blosc`, `pygame` and `torch`(pytorch) should be installed on PC.
+`numpy`, `zmq`, `blosc`, `pigpio` and `picamera` should be installed on Raspberry Pi.
+`numpy`, `zmq`, `blosc`, `pygame` , `gym` and `torch`(pytorch) should be installed on PC.
+
 ## 3. Run
 
 ### 3.1 Gather training data

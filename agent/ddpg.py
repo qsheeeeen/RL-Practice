@@ -1,7 +1,10 @@
 # coding: utf-8
 
+import numpy as np
 import torch
-from torch import nn, optim, cuda
+from torch import nn
+from torch import optim
+from torch import cuda
 from torch.autograd import Variable
 
 from .core import Agent
@@ -22,7 +25,7 @@ class DDPGAgent(Agent):
                  actor_lr=1e-4,
                  critic_lr=1e-3,
                  batch_size=16,
-                 buffer_size=1e6,
+                 buffer_size=10**6,
                  discount_factor=0.99,
                  tau=0.001,
                  train=True,
@@ -71,7 +74,12 @@ class DDPGAgent(Agent):
 
         self._actor_optimizer = optim.Adam(self._critic.parameters(), lr=actor_lr)
         self._critic_optimizer = optim.Adam(self._critic.parameters(), lr=critic_lr)
-        self._critic_criterion = nn.MSELoss()
+
+
+        if cuda.is_available():
+            self._critic_criterion = nn.MSELoss().cuda()
+        else:
+            self._critic_criterion = nn.MSELoss().cuda()
 
         self._replay_buffer = ReplayBuffer(buffer_size)
 
@@ -86,11 +94,12 @@ class DDPGAgent(Agent):
             Parameter level noise.
 
         Args:
-            state_array :
+            state_array (np.ndarray):
             reward (float):
             done (bool):
 
         Returns:
+            np.ndarray:
 
         """
 
@@ -148,10 +157,6 @@ class DDPGAgent(Agent):
         self._last_reward_array = reward
 
         return action_array
-
-    def close(self):
-        # TODO: Save weight.
-        pass
 
     def save(self):
         torch.save(self._actor.state_dict(), self._weight_folder)

@@ -3,6 +3,7 @@
 import random
 import time
 
+import numpy as np
 import pygame
 
 
@@ -24,7 +25,7 @@ class Dashboard(object):
     def update(self, image, info):
         if image.max() <= 1:
             image *= 256
-            
+
         y_position = 10
         self._screen.fill(self._WHITE)
 
@@ -64,8 +65,6 @@ class Dashboard(object):
 
 if __name__ == '__main__':
     # Test. Display random data.
-    import numpy as np
-
     dashboard = Dashboard()
 
     done = False

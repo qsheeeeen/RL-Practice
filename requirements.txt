@@ -3,15 +3,18 @@ torch
 numpy
 
 # Additionally:
-# For test DDPG in virtual environment:
+# For testing DDPG in virtual environment:
 gym
+
+# For collecting data:
+h5py
 
 # For running in real world:
 # On Raspberry Pi:
 blosc
 pigpio
 picamera
-pyzmq
+zmq
 
 # On server:
 blosc

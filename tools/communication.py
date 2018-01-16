@@ -1,7 +1,7 @@
 # coding: utf-8
 
+
 import time
-from multiprocessing import Process
 
 import blosc
 import numpy as np
@@ -73,6 +73,8 @@ def server_run():
 
 
 def main():
+    from multiprocessing import Process
+
     # Test. Send data through different process.
     p1 = Process(target=client_run)
     p2 = Process(target=server_run)
