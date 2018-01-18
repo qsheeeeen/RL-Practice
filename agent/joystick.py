@@ -1,8 +1,8 @@
 # coding: utf-8
 
 import pygame
-from h5py import File
-from numpy import array, float32
+import h5py
+import numpy as np
 
 from .core import Agent
 
@@ -33,10 +33,10 @@ class JoystickAgent(Agent):
         self.controller = pygame.joystick.Joystick(0)
         self.controller.init()
 
-        self.file = File('./data.h5', 'w')
+        self.file = h5py.File('./data.h5', 'w')
 
-        self.state_data_set = self.file.require_dataset('state', state_shape, float32, exact=True, chunks=True)
-        self.action_data_set = self.file.require_dataset('action', action_shape, float32, exact=True, chunks=True)
+        self.state_data_set = self.file.require_dataset('state', state_shape, np.float32, exact=True, chunks=True)
+        self.action_data_set = self.file.require_dataset('action', action_shape, np.float32, exact=True, chunks=True)
 
         self.last_action = None
         self.last_station = None
@@ -45,7 +45,7 @@ class JoystickAgent(Agent):
         steering = self.controller.get_axis(self.steering_axis)
         gas_break = -self.controller.get_axis(self.gas_break_axis)
 
-        return array((steering, gas_break), dtype=float32)
+        return np.array((steering, gas_break), dtype=np.float32)
 
     def close(self):
         pygame.quit()

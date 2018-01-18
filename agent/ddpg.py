@@ -75,7 +75,6 @@ class DDPGAgent(Agent):
         self._actor_optimizer = optim.Adam(self._critic.parameters(), lr=actor_lr)
         self._critic_optimizer = optim.Adam(self._critic.parameters(), lr=critic_lr)
 
-
         if cuda.is_available():
             self._critic_criterion = nn.MSELoss().cuda()
         else:
