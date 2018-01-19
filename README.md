@@ -28,7 +28,7 @@ Depending on what you intend to do, different package are needed.
 See [requirements.txt](requirements.txt) for more detail.
 To make the whole system work 
 `numpy`, `zmq`, `blosc`, `pigpio` and `picamera` should be installed on Raspberry Pi.
-`numpy`, `zmq`, `blosc`, `pygame` , `gym` and `torch`(pytorch) should be installed on PC.
+`numpy`, `zmq`, `blosc`, `pygame` , `gym` and `torch`(PyTorch) should be installed on PC.
 
 ## 3. Run
 
