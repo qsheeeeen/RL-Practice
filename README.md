@@ -45,13 +45,13 @@ Jetson TX2 on a 1:10 RC Model car.
 Maybe drift? Stay tuned!
 
 ## Reference
-[Continuous control with deep reinforcement learning](https://arxiv.org/abs/1509.02971)
+[Emergence of Locomotion Behaviours in Rich Environments](https://arxiv.org/abs/1707.02286)
 
 [Proximal Policy Optimization Algorithms](https://arxiv.org/abs/1707.06347)
 
-[Parameter Space Noise for Exploration](https://arxiv.org/abs/1706.01905)
-
 [Noisy Networks for Exploration](https://arxiv.org/abs/1706.10295)
+
+[Parameter Space Noise for Exploration](https://arxiv.org/abs/1706.01905)
 
 [Deep reinforcement learning from human preferences](https://arxiv.org/abs/1706.03741)
 
