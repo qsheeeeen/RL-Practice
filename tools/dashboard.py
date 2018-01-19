@@ -8,13 +8,13 @@ import pygame
 
 
 class Dashboard(object):
-    def __init__(self):
+    def __init__(self, width=600, high=240):
         self._BLACK = (0, 0, 0)
         self._WHITE = (255, 255, 255)
 
         pygame.init()
 
-        self._screen = pygame.display.set_mode([600, 240])
+        self._screen = pygame.display.set_mode([width, high])
         pygame.display.set_caption("Dashboard")
 
         self._screen.fill(self._WHITE)
