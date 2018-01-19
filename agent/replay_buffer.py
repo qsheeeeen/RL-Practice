@@ -41,6 +41,8 @@ class ReplayBuffer(object):
 
     def store(self, state, action, reward, new_state):
         """
+        TODO:
+            Change input to *items. Make input suitable to 3 or 4 item.
 
         Args:
             state (np.ndarray):
