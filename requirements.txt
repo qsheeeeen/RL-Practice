@@ -1,23 +1,11 @@
-# Basic:
-torch
-numpy
-
-# Additionally:
-# For testing DDPG in virtual environment:
-gym
-
-# For collecting data:
-h5py
-
-# For running in real world:
-# On Raspberry Pi:
 blosc
+gym
+h5py
+numpy
 pigpio
 picamera
-zmq
-
-# On server:
-blosc
 pyzmq
 pygame
-
+torch
+visualdl
+zmq
