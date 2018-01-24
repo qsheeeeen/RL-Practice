@@ -8,7 +8,7 @@ import pigpio
 
 import numpy as np
 
-from .imu import imu
+from .imu import IMU
 
 
 class RacingCar(object):
