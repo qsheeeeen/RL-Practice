@@ -22,11 +22,11 @@ class ReplayBuffer(object):
             batch_size (int):
 
         Returns:
-            (ndarray, ndarray, ndarray, ndarray):
+            tuple:
 
 
         """
-        if len(self.buffer) > batch_size:
+        if len(self.buffer) >= batch_size:
             samples = random.sample(self.buffer, batch_size)
 
             last_state_batch_array = np.array([sample[0] for sample in samples], dtype=np.float32)
@@ -42,7 +42,7 @@ class ReplayBuffer(object):
     def store(self, state, action, reward, new_state):
         """
         TODO:
-            Change input to *items. Make input suitable to 3 or 4 item.
+            Change input to *items. Make input suitable to 3 or 4 items.
 
         Args:
             state (np.ndarray):
