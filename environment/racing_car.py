@@ -8,6 +8,8 @@ import pigpio
 
 import numpy as np
 
+from .imu import imu
+
 
 class RacingCar(object):
     def __init__(self, motor_limitation=0.6):
