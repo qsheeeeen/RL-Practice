@@ -4,7 +4,8 @@ import pigpio
 
 
 class IMU(object):
-    def __init__(self):
+    def __init__(self, interrupt_handle):
+        # TODO
         pass
 
     def get_data(self):
