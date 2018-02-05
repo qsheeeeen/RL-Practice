@@ -3,13 +3,13 @@
 
 class Agent(object):
     def act(self, observation, reward, done):
-        pass
+        raise NotImplementedError
 
     def close(self):
-        pass
+        raise NotImplementedError
 
     def save(self):
-        pass
+        raise NotImplementedError
 
     def load(self):
-        pass
+        raise NotImplementedError
