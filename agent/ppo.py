@@ -14,13 +14,13 @@ from .replay_buffer import ReplayBuffer
 # TODO
 class PPOAgent(Agent):
     def __init__(self):
-        pass
+        raise NotImplementedError
 
     def act(self, observation, reward, done):
-        pass
+        raise NotImplementedError
 
     def save(self):
-        pass
+        raise NotImplementedError
 
     def load(self):
-        pass
+        raise NotImplementedError
