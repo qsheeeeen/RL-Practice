@@ -6,6 +6,7 @@ from torch import nn
 from torch import optim
 from torch import cuda
 from torch.autograd import Variable
+from visualdl import LogWriter
 
 from .core import Agent
 from .replay_buffer import ReplayBuffer
