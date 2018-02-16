@@ -10,3 +10,6 @@ class IMU(object):
 
     def get_data(self):
         pass
+
+    def _setup_interrupt(self):
+        raise NotImplementedError

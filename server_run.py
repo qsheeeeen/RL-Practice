@@ -11,7 +11,7 @@ from tools import send_array, receive_array
 def server_run():
     print('Run as server.')
 
-    port = str(input('Enter the server port. Default: 5555.'))
+    port = str(input('Enter the server port (default: 5555)...'))
 
     if not port:
         port = '5555'

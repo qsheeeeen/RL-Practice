@@ -8,8 +8,3 @@ class Agent(object):
     def close(self):
         raise NotImplementedError
 
-    def save(self):
-        raise NotImplementedError
-
-    def load(self):
-        raise NotImplementedError

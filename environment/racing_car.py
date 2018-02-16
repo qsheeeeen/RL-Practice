@@ -8,7 +8,7 @@ import pigpio
 
 import numpy as np
 
-from .imu import IMU
+from environment.imu import IMU
 
 
 class RacingCar(object):
@@ -20,12 +20,12 @@ class RacingCar(object):
 
         Notes:
             Hardware:
-                RC ECS: Takes 2 servo-like signal as input to control motor and steering servo.
+                RC ECS: Takes 2 PWM signals as inputs to control motor and steering servo.
 
             Adjust parameters to fit your own car.
 
         Args:
-            motor_limitation (float): A number less than 1 meas limiting the motor signal (maybe for safety reason).
+            motor_limitation (float): A number less than 1. Limiting the motor signal (for safety reason).
 
         Raises:
             AssertionError: If motor_limitation is greater than 1.
@@ -44,7 +44,7 @@ class RacingCar(object):
 
         # Hardware configuration. TODO: Servo range.
         self._TIRE_DIAMETER = 0.05
-        self._GEAR_RATIO = 145 / 35
+        self._GEAR_RATIO = 145. / 35.
         self._ENCODER_LINE = 512
         self._SERVO_RANGE = 200
         self._MOTOR_RANGE = 500
@@ -53,7 +53,7 @@ class RacingCar(object):
         self._SPEED_UPDATE_INTERVAL = 500
         self._REWARD_UPDATE_INTERVAL = 500
 
-        # Setup hardware controlling. TODO: RISING_EDGE or FALLING_EDGE
+        # Set up hardware controlling. TODO: RISING_EDGE or FALLING_EDGE
         os.system('sudo pigpiod')
         time.sleep(1)
 
@@ -69,7 +69,7 @@ class RacingCar(object):
 
         self._update_pwm(0, 0)
 
-        # Setup camera.
+        # Set up camera.
         self._image_width, self._image_height = (320, 240)
         self._image = np.empty((self._image_height, self._image_width, 3), dtype=np.float32)
 
@@ -81,10 +81,10 @@ class RacingCar(object):
         self._cam.meter_mode = 'backlit'
 
         self._car_info = {
-            'Steering signal': 0.,
-            'Motor signal': 0.,
-            'Reward': 0.,
-            'Car speed': 0.,
+            'Steering signal': np.array([0], np.float32),
+            'Motor signal': np.array([0], np.float32),
+            'Reward': np.array([0], np.float32),
+            'Car speed': np.array([0], np.float32),
             'Done': False}
 
         self._motor_limitation = motor_limitation
@@ -99,7 +99,7 @@ class RacingCar(object):
         """Reset environment.
 
         Returns:
-            (np.ndarray, float, bool, dict): Same format like gym.
+            np.ndarray: Similar to gym.
 
         """
         self._update_pwm(0, 0)
@@ -112,7 +112,7 @@ class RacingCar(object):
             'Car speed': 0,
             'Done': False}
 
-        return self._image, self._car_info['Reward'], self._car_info['Done'], self._car_info
+        return self._image
 
     def step(self, action):
         """Perform action.
@@ -138,7 +138,7 @@ class RacingCar(object):
 
         if self._car_info['Done']:
             steering_signal, motor_signal = 0, 0
-            self._car_info['Reward'] = -1
+            # self._car_info['Reward'] = -1
         else:
             steering_signal, motor_signal = action
 
@@ -162,7 +162,6 @@ class RacingCar(object):
     def _capture_image(self):
         # TODO: Check image value.
         self._cam.capture(self._image, 'rgb', use_video_port=True, resize=(self._image_width, self._image_height))
-        self._image = self._image / 256.
 
     def _interrupt_handle(self, gpio, level):
         if (gpio == self._LEFT_LINE_SENSOR_PIN) or (gpio == self._RIGHT_LINE_SENSOR_PIN):

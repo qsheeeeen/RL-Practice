@@ -1,10 +1,10 @@
 # coding: utf-8
 
-import pygame
 import h5py
 import numpy as np
+import pygame
 
-from .core import Agent
+from agent.core import Agent
 
 
 class JoystickAgent(Agent):
@@ -50,3 +50,9 @@ class JoystickAgent(Agent):
     def close(self):
         pygame.quit()
         self.file.close()
+
+    def save(self):
+        raise NotImplementedError
+
+    def load(self):
+        raise NotImplementedError

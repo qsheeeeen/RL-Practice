@@ -7,17 +7,30 @@ import blosc
 import numpy as np
 import zmq
 
-
-def send_array(socket, array):
+# TODO: Compress and send.
+def send_data(socket, *inputs):
     """Pack the array and send it"""
-    packed_array = blosc.pack_array(array)
-    return socket.send(packed_array)
+    if len(inputs) == 1:
+        packed_array = blosc.pack_array(inputs[0])
+        return socket.send((packed_array,))
+
+    elif len(inputs) == 4:
+        packed_array = blosc.pack_array(inputs[0])
+
+        return socket.send((packed_array,) + (inputs[1:]))
 
 
-def receive_array(socket):
+def receive_data(socket):
     """Receive the pack and unpack it."""
-    packed_array = socket.recv()
-    return blosc.unpack_array(packed_array)
+    data = socket.recv()
+    if len(data) == 1:
+        array = blosc.unpack_array(data[0])
+        return array
+
+    elif len(data) == 4:
+        array = blosc.unpack_array(data[0])
+
+        return (array,) + (data[1:])
 
 
 def client_run():
@@ -29,14 +42,14 @@ def client_run():
     array = np.random.rand(1, 240, 320, 3).astype(np.float32)
 
     print('Send data for the first time...', end='\t')
-    send_array(socket, array)
+    send_data(socket, array, np.pi, np.pi, np.pi)
     print('Com success.')
 
     for i in range(20):
         start = time.time()
 
         print('Wait for action...', end='\t')
-        b = receive_array(socket)
+        b = receive_data(socket)
         print('Received.')
 
         print()
@@ -47,8 +60,10 @@ def client_run():
 
         array = np.random.rand(1, 240, 320, 3).astype(np.float32)
 
+        data = (array, 1, 1, 0)
+
         print('Send result...', end='\t')
-        send_array(socket, array)
+        send_data(socket, array, np.pi, np.pi, np.pi)
         print('Done.')
 
 
@@ -59,16 +74,16 @@ def server_run():
     socket.bind("tcp://*:5555")
 
     print('Wait for the first result...', end='\t')
-    b = receive_array(socket)
+    b = receive_data(socket)
     print('Com success.')
 
     for i in range(20):
         print('Send action...', end='\t')
-        send_array(socket, b)
+        send_data(socket, b)
         print('Done.')
 
         print('Wait for result...', end='\t')
-        b = receive_array(socket)
+        b = receive_data(socket)
         print('Received.')
 
 

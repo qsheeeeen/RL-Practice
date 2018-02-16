@@ -2,35 +2,32 @@
 
 import numpy as np
 import torch
+from torch import cuda
 from torch import nn
 from torch import optim
-from torch import cuda
 from torch.autograd import Variable
 
-from .core import Agent
-from .replay_buffer import ReplayBuffer
+from agent.core import Agent
+from agent.replay_buffer import ReplayBuffer
 
 
-# TODO:
-def init_weights(m):
-    print(m)
-    m.weight.data.fill_(1.0)
-    print(m.weight)
+# TODO: Init weights.
 
 
 class DDPGAgent(Agent):
-    def __init__(self,
-                 actor_net,
-                 critic_net,
-                 actor_lr=1e-4,
-                 critic_lr=1e-3,
-                 batch_size=16,
-                 buffer_size=10**6,
-                 discount_factor=0.99,
-                 tau=0.001,
-                 train=True,
-                 load=False,
-                 weight_folder='./weights', ):
+    def __init__(
+            self,
+            actor_net,
+            critic_net,
+            actor_lr=1e-4,
+            critic_lr=1e-3,
+            batch_size=16,
+            buffer_size=10 ** 6,
+            discount_factor=0.99,
+            tau=0.001,
+            train=True,
+            load=False,
+            weight_folder='./weights', ):
 
         self._batch_size = batch_size
         self._discount_factor = discount_factor
@@ -105,10 +102,11 @@ class DDPGAgent(Agent):
         if self._train:
             # Store transition.
             if self._last_state_array and self._last_action_array and self._last_reward_array:
-                self._replay_buffer.store(self._last_state_array,
-                                          self._last_action_array,
-                                          self._last_reward_array,
-                                          state_array)
+                self._replay_buffer.store(
+                    self._last_state_array,
+                    self._last_action_array,
+                    self._last_reward_array,
+                    state_array)
 
             # Sample a random mini-batch.
             samples = self._replay_buffer.sample(self._batch_size)
@@ -130,7 +128,7 @@ class DDPGAgent(Agent):
 
                 # Update actor.
                 self._actor.zero_grad()
-                actor_loss = (-self._critic([state_batch_array, self._actor(state_batch_array)])).mean()
+                actor_loss = -torch.mean(self._critic([state_batch_array, self._actor(state_batch_array)]))
                 actor_loss.backward()
                 self._actor_optimizer.step()
 
@@ -142,20 +140,19 @@ class DDPGAgent(Agent):
                 for f_t, f in self._target_actor.parameters(), self._actor.parameters():
                     f_t.data = self._tau * f.data + (1 - self._tau) * f_t.data
 
-            # Select action using actor.
-            state = Variable(torch.from_numpy(state_array).float, requires_grad=False).unsqueeze(0)
-
-        else:
-            state = Variable(torch.from_numpy(state_array).float, volatile=True).unsqueeze(0)
+        # Select action using actor.
+        state = Variable(torch.from_numpy(state_array).float, volatile=True).unsqueeze(0)
 
         action_array = self._actor(state).numpy()
 
-        # Execute Action.
         self._last_state_array = state_array
         self._last_action_array = action_array
-        self._last_reward_array = reward
+        self._last_reward_array = reward  # TODO: Wrong. need revode.
 
         return action_array
+
+    def close(self):
+        raise NotImplementedError
 
     def save(self):
         torch.save(self._actor.state_dict(), self._weight_folder)

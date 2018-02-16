@@ -55,6 +55,8 @@ Maybe drift? Stay tuned!
 
 [Deep reinforcement learning from human preferences](https://arxiv.org/abs/1706.03741)
 
+[openai/baselines](https://github.com/openai/baselines)
+
 ## License
 This project is released under MIT License.
 Please review [License](LICENSE) file for more details.

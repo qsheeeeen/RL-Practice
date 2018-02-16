@@ -1,9 +1,9 @@
 # coding: utf-8
 
-from collections import deque
 import random
+from collections import deque
 
-import numpy as np
+import torch
 
 
 class ReplayBuffer(object):
@@ -14,47 +14,41 @@ class ReplayBuffer(object):
             buffer_size (int):
         """
         self.buffer = deque(maxlen=buffer_size)
+        self.item_len = None
 
-    def sample(self, batch_size):
-        """
+    def __len__(self):
+        return len(self.buffer)
 
-        Args:
-            batch_size (int):
+    def pop(self, number):
+        if len(self.buffer) >= number:
+            samples = [self.buffer.pop() for _ in range(number)]
 
-        Returns:
-            tuple:
+            result = [torch.Tensor([sample[i] for sample in samples]).float() for i in range(len(samples))]
 
-
-        """
-        if len(self.buffer) >= batch_size:
-            samples = random.sample(self.buffer, batch_size)
-
-            last_state_batch_array = np.array([sample[0] for sample in samples], dtype=np.float32)
-            last_action_batch_array = np.array([sample[1] for sample in samples], dtype=np.float32)
-            last_reward_batch_array = np.array([sample[2] for sample in samples], dtype=np.float32)
-            state_batch_array = np.array([sample[4] for sample in samples], dtype=np.float32)
-
-            return last_state_batch_array, last_action_batch_array, last_reward_batch_array, state_batch_array
+            result = tuple(result)
+            return result
 
         else:
             return None
 
-    def store(self, state, action, reward, new_state):
-        """
-        TODO:
-            Change input to *items. Make input suitable to 3 or 4 items.
+    def random_sample(self, number):
+        if len(self.buffer) >= number:
+            samples = random.sample(self.buffer, number)
 
-        Args:
-            state (np.ndarray):
-            action (np.ndarray):
-            reward (float):
-            new_state (np.ndarray):
+            result = []
+            for i in range(len(samples)):
+                result.append(np.array([sample[i] for sample in samples], dtype=np.float32))
 
-        Returns:
-            None
+            result = tuple(result)
+            return result
 
-        """
-        self.buffer.append((state, action, reward, new_state))
+        else:
+            return None
+
+    def store(self, *items):
+        self.buffer.append(items)
+
+        self.item_len = len(items)
 
     def clear(self):
         self.buffer.clear()
