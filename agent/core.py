@@ -2,7 +2,7 @@
 
 
 class Agent(object):
-    def act(self, observation, reward, done):
+    def act(self, *inputs):
         raise NotImplementedError
 
     def close(self):

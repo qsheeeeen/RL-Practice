@@ -1,11 +1,13 @@
 # coding: utf-8
 
 import pigpio
+import serial
 
 
 class IMU(object):
     def __init__(self, interrupt_handle):
-        # TODO
+        # TODO https://www.raspberrypi.org/documentation/configuration/uart.md
+        # /dev/serial0
         pass
 
     def get_data(self):

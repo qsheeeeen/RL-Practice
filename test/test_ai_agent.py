@@ -1,23 +1,24 @@
 # coding: utf-8
 
 import gym
+from ..agent import PPOAgent
 
 
-# TODO: Test DDPG
 def main():
+    agent = PPOAgent()
     env = gym.make('CarRacing-v0')
-    observation = env.reset()
 
-    # agent = AIAgent()
-    done = False
-    while not done:
+    ob = env.reset()
+    env.render()
+    action = agent.act(ob)
+    while True:
+        ob, reward, done, _ = env.step(action)
         env.render()
-        action = env.action_space.sample()
-        print(action)
-        observation, reward, done, info = env.step(action)
+        action = agent.act(ob, reward, done)
 
+        if done:
+            break
 
-print("Episode finished")
 
 if __name__ == '__main__':
     main()

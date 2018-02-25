@@ -1,5 +1,5 @@
 # coding: utf-8
 
-from agent.ddpg import DDPGAgent
-from agent.joystick import JoystickAgent
-from agent.ppo import PPOAgent
+from .ddpg import DDPGAgent
+from .joystick import JoystickAgent
+from .ppo import PPOAgent

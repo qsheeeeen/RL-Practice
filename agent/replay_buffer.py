@@ -19,13 +19,26 @@ class ReplayBuffer(object):
     def __len__(self):
         return len(self.buffer)
 
+    def get_all(self):
+        results = [[item[i] for item in self.buffer] for i in range(len(self.buffer[0]))]
+        return [torch.stack(thing) for thing in results]
+
     def pop(self, number):
+        """
+        Notes:
+            Return is in reversed order.
+
+        Args:
+            number:
+
+        Returns:
+
+        """
         if len(self.buffer) >= number:
             samples = [self.buffer.pop() for _ in range(number)]
 
             result = [torch.Tensor([sample[i] for sample in samples]).float() for i in range(len(samples))]
 
-            result = tuple(result)
             return result
 
         else:
@@ -45,10 +58,8 @@ class ReplayBuffer(object):
         else:
             return None
 
-    def store(self, *items):
+    def store(self, items):
         self.buffer.append(items)
-
-        self.item_len = len(items)
 
     def clear(self):
         self.buffer.clear()

@@ -2,6 +2,7 @@
 
 import os
 import time
+import logging
 
 import picamera
 import pigpio
@@ -12,17 +13,16 @@ from environment.imu import IMU
 
 
 class RacingCar(object):
-    def __init__(self, motor_limitation=0.6):
+    def __init__(self, remote_control, motor_limitation=0.6):
         """Init environment
 
         TODO:
-            Add IMU for detecting shock (or crash).
+            Add IMU for detecting crash.
 
         Notes:
             Hardware:
-                RC ECS: Takes 2 PWM signals as inputs to control motor and steering servo.
-
-            Adjust parameters to fit your own car.
+                ECS controlled motor.
+                Steering servo.
 
         Args:
             motor_limitation (float): A number less than 1. Limiting the motor signal (for safety reason).
@@ -70,8 +70,8 @@ class RacingCar(object):
         self._update_pwm(0, 0)
 
         # Set up camera.
-        self._image_width, self._image_height = (320, 240)
-        self._image = np.empty((self._image_height, self._image_width, 3), dtype=np.float32)
+        self._image_width, self._image_height = 320, 240
+        self._image = np.empty((self._image_height, self._image_width, 3), dtype=np.uint8)
 
         self._cam = picamera.Picamera()
         self._cam.resolution = 1640, 1232
@@ -81,10 +81,10 @@ class RacingCar(object):
         self._cam.meter_mode = 'backlit'
 
         self._car_info = {
-            'Steering signal': np.array([0], np.float32),
-            'Motor signal': np.array([0], np.float32),
-            'Reward': np.array([0], np.float32),
-            'Car speed': np.array([0], np.float32),
+            'Steering signal': 0,
+            'Motor signal': 0,
+            'Reward': 0,
+            'Car speed': 0,
             'Done': False}
 
         self._motor_limitation = motor_limitation
@@ -96,14 +96,8 @@ class RacingCar(object):
         self.sample_action = (np.random.rand(2) * 2 - 1).astype(np.float32)
 
     def reset(self):
-        """Reset environment.
-
-        Returns:
-            np.ndarray: Similar to gym.
-
-        """
         self._update_pwm(0, 0)
-        self._capture_image()
+        self._update_image()
 
         self._car_info = {
             'Steering signal': 0,
@@ -118,38 +112,31 @@ class RacingCar(object):
         """Perform action.
 
         Args:
-            action (np.ndarray): A array with shape (2,).
-                First number controls steering.
-                -1 for full left. 1 for full right.
-                Second number controls gas and break.
-                -1 for full break. 1 for full gas.
+            action: Anything with shape (2,).
 
-        Returns:
-            tuple: Same format like gym.
+                First number:
+                left    <-->    right
+                -1      <-->    1
+
+                Second number:
+                break   <-->    gas
+                -1      <-->    1
 
         Raises:
             AssertionError: When input array is not in correct shape or value (eg. > 1).
 
         """
-        assert len(action) == 2, 'Incorrect input shape'
-
-        if not isinstance(action, tuple):
-            action = tuple(action)
+        assert len(action) == 2, 'Incorrect input shape.'
+        assert -1. <= action[0] <= 1., 'Incorrect input value.'
+        assert -1. <= action[1] <= 1., 'Incorrect input value.'
 
         if self._car_info['Done']:
-            steering_signal, motor_signal = 0, 0
-            # self._car_info['Reward'] = -1
+            self._car_info['Steering signal'], self._car_info['Motor signal'] = 0, 0
         else:
-            steering_signal, motor_signal = action
+            self._car_info['Steering signal'], self._car_info['Motor signal'] = action
 
-        motor_signal *= self._motor_limitation
-
-        self._car_info['Steering signal'] = steering_signal
-        self._car_info['Motor signal'] = motor_signal
-
-        self._update_pwm(steering_signal, motor_signal)
-
-        self._capture_image()
+        self._update_pwm(self._car_info['Steering signal'], self._car_info['Motor signal'])
+        self._update_image()
 
         return self._image, self._car_info['Reward'], self._car_info['Done'], self._car_info
 
@@ -159,11 +146,11 @@ class RacingCar(object):
         self._update_pwm(0, 0)
         self._pi.stop()
 
-    def _capture_image(self):
+    def _update_image(self):
         # TODO: Check image value.
         self._cam.capture(self._image, 'rgb', use_video_port=True, resize=(self._image_width, self._image_height))
 
-    def _interrupt_handle(self, gpio, level):
+    def _interrupt_handle(self, gpio, level, tick):
         if (gpio == self._LEFT_LINE_SENSOR_PIN) or (gpio == self._RIGHT_LINE_SENSOR_PIN):
             self._car_info['Done'] = True
 
@@ -190,6 +177,8 @@ class RacingCar(object):
 
         def scale_range(old_value, old_min, old_max, new_min, new_max):
             return ((old_value - old_min) / (old_max - old_min)) * (new_max - new_min) + new_min
+
+        motor_signal *= self._motor_limitation
 
         pwm_wave = scale_range(steering_signal, -1, 1, (1500 - self._SERVO_RANGE), (1500 + self._SERVO_RANGE))
         self._pi.set_servo_pulsewidth(self._STEERING_SERVO_PIN, pwm_wave)

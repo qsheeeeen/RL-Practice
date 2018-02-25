@@ -1,11 +1,12 @@
-#blosc
+blosc
 gym
 h5py
+msgpack
 numpy
 pigpio
 picamera
-#pyzmq
-zerorpc
 pygame
+pyserial
+pyzmq
 torch
 visualdl

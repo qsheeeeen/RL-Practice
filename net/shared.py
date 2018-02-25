@@ -1,5 +1,6 @@
 # coding: utf-8
 
+import torch
 from torch import nn
 from torch.nn import functional
 from torch.distributions import Normal  # TODO: LogNormal
@@ -8,17 +9,16 @@ from torch.distributions import Normal  # TODO: LogNormal
 class SharedNetwork(nn.Module):
     def __init__(self, use_cuda=True):
         super(SharedNetwork, self).__init__()
-        self.conv_1 = nn.Conv2d(3, 16, kernel_size=5, padding=2),
-        self.bn_1 = nn.BatchNorm2d(16),
-        self.relu_1 = nn.ReLU(),
-        self.conv_2 = nn.Conv2d(16, 32, kernel_size=5, padding=2),
-        self.bn_2 = nn.BatchNorm2d(32),
-        self.relu_2 = nn.ReLU()
+        self.conv_1 = nn.Conv2d(3, 16, kernel_size=3, padding=1)
+        self.bn_1 = nn.BatchNorm2d(16)
+        self.conv_2 = nn.Conv2d(16, 32, kernel_size=3, padding=1)
+        self.bn_2 = nn.BatchNorm2d(32)
 
-        self.fc = nn.Linear(7 * 7 * 32, 128)
+        self.fc_1 = nn.Linear(294912, 256)
+        self.fc_2 = nn.Linear(256, 128)
 
-        self.mean_fc = nn.Linear(128, 2)
-        self.std_fc = nn.Linear(128, 2)
+        self.mean_fc = nn.Linear(128, 3)
+        self.std_fc = nn.Linear(128, 3)
         self.value_fc = nn.Linear(128, 1)
 
         self.m = None
@@ -27,26 +27,33 @@ class SharedNetwork(nn.Module):
             self.cuda()
 
     def forward(self, x):
-        out = functional.relu(functional.max_pool2d(self.conv1(x), 2))
-        out = functional.relu(functional.max_pool2d(self.conv2(out), 2))
-        out = out.view(-1, 320)
-        out = functional.relu(self.fc1(out))
-        out = functional.dropout(out, training=self.training)
-        out = self.fc2(out)
+        x = self.conv_1(x)
+        x = self.bn_1(x)
+        x = functional.relu(x)
 
-        mean = self.mean_fc(out)
+        x = self.conv_2(x)
+        x = self.bn_2(x)
+        x = functional.relu(x)
+
+        x = x.view(x.size(0), -1)
+
+        x = self.fc_1(x)
+        x = functional.relu(x)
+        x = self.fc_2(x)
+        x = functional.relu(x)
+
+        mean = self.mean_fc(x)
         mean = functional.tanh(mean)
 
-        std = self.std_fc(out)
+        std = self.std_fc(x)
+        std = torch.exp(std)
 
-        value = self.value_fc(out)
-        value = functional.tanh(value)
+        value = self.value_fc(x)
 
         self.m = Normal(mean, std)
         action = self.m.sample()
 
         return action, value
 
-    def log_prob(self, state, value):
-        self.forward(state)
-        return self.m.log_prob(value)
+    def log_prob(self, action):
+        return self.m.log_prob(action)

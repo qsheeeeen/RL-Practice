@@ -1,48 +1,30 @@
 # coding: utf-8
+import zerorpc
 
-from zmq import Context, REQ
-
-from environment import RacingCar
-from tools import send_array, receive_array
+from agent import JoystickAgent
+from tools import Dashboard
 
 
-def client_run():
-    print('Run as client.')
+def main():
+    env = zerorpc.Client()
+    env.connect("tcp://127.0.0.1:4242")
 
-    ip_address = input('Enter the server IP address with port. Default: 192.168.1.2:5555 .')
-    if not ip_address:
-        ip_address = '192.168.1.2:5555'
+    print('Init Dashboard.')
+    dashboard = Dashboard()
 
-    print('Init environment.')
-    env = RacingCar()
-    data = env.reset()
+    agent = JoystickAgent()
 
-    print('Init communication.')
-    context = Context()
-    socket = context.socket(REQ)
-    socket.connect(ip_address)
+    ob = env.reset()
+    action = agent.act(ob)
 
-    print('Send data for the first time...')
-    send_array(socket, data)
+    close = False
+    while not close:
+        ob, reward, done, info = env.step(action)
+        action = agent.act(ob, reward, done)
+        close = dashboard.update(ob, info)
 
-    print('Wait for action...', end='\t')
-    action = receive_array(socket)
-    print('Com success.')
-
-    try:
-        while True:
-            data = env.step(action)
-
-            print('Send result...', end='\t')
-            send_array(socket, data)
-            print('Done.')
-
-            print('Wait for action...', end='\t')
-            action = receive_array(socket)
-            print('Received.')
-    finally:
-        env.close()
+    agent.close()
 
 
 if __name__ == '__main__':
-    client_run()
+    main()
