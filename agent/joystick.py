@@ -1,5 +1,6 @@
 # coding: utf-8
 
+import torch
 import h5py
 import numpy as np
 import pygame
@@ -9,20 +10,6 @@ from agent.core import Agent
 
 class JoystickAgent(Agent):
     def __init__(self, state_shape, action_shape):
-        """For testing and fun.
-
-        TODO:
-            Add button controlled shut down.
-            Add button controlled begin record.
-
-        Args:
-            state_shape (tuple):
-            action_shape (tuple):
-
-        Raises:
-            AssertionError: Can not find any joystick.
-
-        """
         self.steering_axis = 4
         self.gas_break_axis = 2
 
@@ -52,7 +39,7 @@ class JoystickAgent(Agent):
         self.file.close()
 
     def save(self):
-        raise NotImplementedError
+        torch.save(self.policy_old.state_dict(), self.weight_path)
 
     def load(self):
         raise NotImplementedError

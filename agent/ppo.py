@@ -25,7 +25,7 @@ class PPOAgent(Agent):
             gae_parameter=0.95,
             clip_range=0.2,
             train=True,
-            load=True,
+            load=False,
             weight_path='./weights'):
         self.horizon = horizon
         self.learning_rate = learning_rate
@@ -56,16 +56,7 @@ class PPOAgent(Agent):
 
         self.last_stored = None
 
-    def act(self, *inputs):
-        if len(inputs) == 1:
-            state_array = inputs[0]
-            reward = 0
-            done = False
-        elif len(inputs) == 3:
-            state_array, reward, done = inputs
-        else:
-            raise NotImplementedError
-
+    def act(self, state_array, reward=0., done=False):
         state = self._preprocessing(state_array)
         reward = torch.FloatTensor([reward])
 
@@ -110,11 +101,11 @@ class PPOAgent(Agent):
 
         advantages = (advantages - advantages.mean()) / advantages.std()
 
-        dataset_1 = TensorDataset(states, log_probs_old)
-        dataset_2 = TensorDataset(advantages, values_target)
+        data_set_1 = TensorDataset(states, log_probs_old)
+        data_set_2 = TensorDataset(advantages, values_target)
 
-        data_loader_1 = DataLoader(dataset_1, self.batch_size)
-        data_loader_2 = DataLoader(dataset_2, self.batch_size)
+        data_loader_1 = DataLoader(data_set_1, self.batch_size)
+        data_loader_2 = DataLoader(data_set_2, self.batch_size)
 
         # Update policy network.
         for _ in range(self.num_epoch):
@@ -150,15 +141,15 @@ class PPOAgent(Agent):
         pass
 
     @staticmethod
-    def _preprocessing(x):
+    def _preprocessing(array):
         import numpy as np
-        a = np.zeros_like(x)
-        a += x
-        x = torch.from_numpy(a).float()
-        x = x.permute(2, 0, 1)
-        x /= 256.
+        a = np.zeros_like(array)
+        a += array
+        array = torch.from_numpy(a).float()
+        array = array.permute(2, 0, 1)
+        array /= 256.
 
-        return x
+        return array
 
 
 if __name__ == '__main__':
@@ -178,7 +169,7 @@ if __name__ == '__main__':
             action = agent.act(ob, r, d)
 
             if d:
-                print('Done i:{},x:{} '.format(i,x))
+                print('Done i:{},x:{} '.format(i, x))
                 print(time.ctime())
                 d = False
                 agent.save()
