@@ -20,7 +20,10 @@ class ReplayBuffer(object):
         return len(self.buffer)
 
     def get_all(self):
-        return [torch.stack([item[i] for item in self.buffer]).float() for i in range(len(self.buffer[0]))]
+        samples = [torch.stack([item[i] for item in self.buffer]).float() for i in range(len(self.buffer[0]))]
+        self.buffer.clear()
+
+        return samples
 
     def pop(self, number):
         if len(self.buffer) >= number:

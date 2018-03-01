@@ -3,8 +3,8 @@
 import torch
 from torch import optim
 from torch.autograd import Variable
-from torch.utils.data import TensorDataset
-from torch.utils.data import DataLoader
+from torch.distributions import Normal
+from torch.utils.data import TensorDataset, DataLoader
 
 from agent.core import Agent
 from agent.replay_buffer import ReplayBuffer
@@ -54,25 +54,28 @@ class PPOAgent(Agent):
 
             self.replay_buffer = ReplayBuffer(horizon)
 
-        self.last_stored = None
+        self.stored = None
 
     def act(self, state_array, reward=0., done=False):
         state = self._preprocessing(state_array)
         reward = torch.FloatTensor([reward])
 
         if self.train:
-            if self.last_stored:
-                self.replay_buffer.store((self.last_stored + (reward,)))
+            if self.stored:
+                self.replay_buffer.store((self.stored + (reward,)))
 
                 if (len(self.replay_buffer) == self.horizon) or done:
                     self._finish_iteration()
 
-        action_var, value_var = self.policy_old(Variable(state.unsqueeze(0).cuda(), volatile=True))
+        mean_var, std_var, value_var = self.policy_old(Variable(state.unsqueeze(0).cuda(), volatile=True))
+
+        m = Normal(mean_var, std_var)
+        action_var = m.sample()
 
         if self.train:
-            self.last_stored = (state,
-                                value_var.data.cpu()[0],
-                                self.policy_old.log_prob(action_var).data.cpu()[0])
+            self.stored = (state,
+                           value_var.data.cpu()[0],
+                           m.log_prob(action_var).data.cpu()[0])
 
         return action_var.data.cpu().numpy()[0]
 
@@ -82,34 +85,48 @@ class PPOAgent(Agent):
     def save(self):
         torch.save(self.policy_old.state_dict(), self.weight_path)
 
-    def _finish_iteration(self):
-        episode_length = len(self.replay_buffer)
-        samples = self.replay_buffer.get_all()
-        self.replay_buffer.clear()
+    @staticmethod
+    def _preprocessing(array):
+        import numpy as np
+        a = np.zeros_like(array)
+        a += array
+        array = torch.from_numpy(a).float()
+        array = array.permute(2, 0, 1)
+        array /= 256.
 
-        states, values, log_probs_old, rewards = samples
+        return array
 
+    def _calculate_advantage(self, rewards, values):
         advantages = torch.zeros_like(rewards)
         advantages[-1] = rewards[-1] - values[-1]
 
-        for t in reversed(range(episode_length - 1)):
+        for t in reversed(range(len(rewards) - 1)):
             delta = rewards[t] + self.discount_factor * values[t + 1] - values[t]
 
             advantages[t] = delta + self.discount_factor * self.gae_parameter * advantages[t + 1]
 
-        values_target = advantages + values
+        return advantages
+
+    def _finish_iteration(self):
+        samples = self.replay_buffer.get_all()
+
+        states, values_old, log_probs_old, rewards = samples
+
+        advantages = self._calculate_advantage(rewards, values_old)
+
+        values_target = advantages + values_old
 
         advantages = (advantages - advantages.mean()) / advantages.std()
 
         data_set_1 = TensorDataset(states, log_probs_old)
         data_set_2 = TensorDataset(advantages, values_target)
 
-        data_loader_1 = DataLoader(data_set_1, self.batch_size)
-        data_loader_2 = DataLoader(data_set_2, self.batch_size)
+        data_loader_1 = DataLoader(data_set_1, self.batch_size, shuffle=True)
+        data_loader_2 = DataLoader(data_set_2, self.batch_size, shuffle=True)
 
         # Update policy network.
         for _ in range(self.num_epoch):
-            for ((states, log_probs_old), (advantages, values_target)) in zip(data_loader_1, data_loader_2):
+            for (states, log_probs_old), (advantages, values_target) in zip(data_loader_1, data_loader_2):
                 states_var = Variable(states.cuda())
                 log_probs_old_var = Variable(log_probs_old.cuda())
                 advantages_var = Variable(advantages.cuda())
@@ -117,8 +134,10 @@ class PPOAgent(Agent):
 
                 self.policy_optimizer.zero_grad()
 
-                actions_var, values_var = self.policy(states_var)
-                log_probs_var = self.policy.log_prob(actions_var)
+                means_var, stds_var, values_var = self.policy(states_var)
+                m = Normal(means_var, stds_var)
+                actions_var = m.sample()
+                log_probs_var = m.log_prob(actions_var)
 
                 ratio = torch.exp(log_probs_var - log_probs_old_var)
 
@@ -137,40 +156,43 @@ class PPOAgent(Agent):
         self.policy_old.load_state_dict(self.policy.state_dict())
         print('Finished update.')
 
-    def _select_action(self):
-        pass
-
-    @staticmethod
-    def _preprocessing(array):
-        import numpy as np
-        a = np.zeros_like(array)
-        a += array
-        array = torch.from_numpy(a).float()
-        array = array.permute(2, 0, 1)
-        array /= 256.
-
-        return array
-
 
 if __name__ == '__main__':
+    def convert_action(action):
+        x = np.array([0, 0, 0])
+        x[0] = action[0]
+        if action[1] > 0:
+            x[1] = action[1]
+        else:
+            x[2] = -action[1]
+        return x
+
+
     import gym
     import time
+    import numpy as np
 
     agent = PPOAgent(load=False)
     env = gym.make('CarRacing-v0')
-    for i in range(100000):
+    for i in range(1000):
         print('Begin.')
         ob = env.reset()
         env.render()
         action = agent.act(ob)
+
+        action = convert_action(action)
+
         for x in range(10000):
             ob, r, d, _ = env.step(action)
             env.render()
             action = agent.act(ob, r, d)
 
+            action = convert_action(action)
+
             if d:
                 print('Done i:{},x:{} '.format(i, x))
                 print(time.ctime())
+                print()
                 d = False
                 agent.save()
                 break
