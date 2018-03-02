@@ -3,6 +3,7 @@
 import blosc
 import msgpack
 
+
 def send_array(socket, array):
     """Pack the array and send it"""
     packed_array = blosc.pack_array(array)

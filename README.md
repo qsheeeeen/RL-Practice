@@ -1,5 +1,6 @@
 # Self Driving Car (Unfinished)
-A self-driving model car. About 1:18 compare to real car.
+A self-driving model car running reinforcement learning algorithms implemented in PyTorch.
+
 
 
 ## 1. Result

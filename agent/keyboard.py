@@ -61,8 +61,9 @@ if __name__ == '__main__':
     agent = KeyboardAgent()
 
     env = gym.make('CarRacing-v0')
-    env.viewer.window.on_key_press = agent.key_press
-    env.viewer.window.on_key_release = agent.key_release
+    env.render()
+    env.unwrapped.viewer.window.on_key_press = agent.key_press
+    env.unwrapped.viewer.window.on_key_release = agent.key_release
 
     ob = env.reset()
     env.render()
