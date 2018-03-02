@@ -68,7 +68,6 @@ class PPOAgent(Agent):
                     self._finish_iteration()
 
         mean_var, std_var, value_var = self.policy_old(Variable(state.unsqueeze(0).cuda(), volatile=True))
-
         m = Normal(mean_var, std_var)
         action_var = m.sample()
 
@@ -90,11 +89,11 @@ class PPOAgent(Agent):
         import numpy as np
         a = np.zeros_like(array)
         a += array
-        array = torch.from_numpy(a).float()
-        array = array.permute(2, 0, 1)
-        array /= 256.
+        tensor = torch.from_numpy(a).float()
+        tensor = tensor.permute(2, 0, 1)
+        tensor /= 256.
 
-        return array
+        return tensor
 
     def _calculate_advantage(self, rewards, values):
         advantages = torch.zeros_like(rewards)
@@ -102,7 +101,6 @@ class PPOAgent(Agent):
 
         for t in reversed(range(len(rewards) - 1)):
             delta = rewards[t] + self.discount_factor * values[t + 1] - values[t]
-
             advantages[t] = delta + self.discount_factor * self.gae_parameter * advantages[t + 1]
 
         return advantages

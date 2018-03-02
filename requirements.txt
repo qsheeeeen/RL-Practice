@@ -6,6 +6,7 @@ numpy
 pigpio
 picamera
 pygame
+pyglet
 pyserial
 pyzmq
 torch
