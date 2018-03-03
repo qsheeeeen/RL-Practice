@@ -129,8 +129,6 @@ class PPOAgent(Agent):
                 advantages_var = Variable(advantages.cuda())
                 values_target_var = Variable(values_target.cuda())
 
-                self.policy_optimizer.zero_grad()
-
                 means_var, stds_var, values_var = self.policy(states_var)
                 m = Normal(means_var, stds_var)
                 actions_var = m.sample()
@@ -145,7 +143,8 @@ class PPOAgent(Agent):
                 value_loss = torch.mean(torch.pow((values_var - values_target_var), 2))
 
                 total_loss = pessimistic_surrogate + value_loss
-
+                
+                self.policy_optimizer.zero_grad()
                 total_loss.backward()
                 self.policy_optimizer.step()
 
