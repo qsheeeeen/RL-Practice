@@ -58,20 +58,19 @@ class PPOAgent(Agent):
 
     def act(self, state_array, reward=0., done=False):
         state = self._preprocessing(state_array)
-        reward = torch.FloatTensor([reward])
-
-        if self.train:
-            if self.stored:
-                self.replay_buffer.store((self.stored + (reward,)))
-
-                if (len(self.replay_buffer) == self.horizon) or done:
-                    self._finish_iteration()
+        reward = torch.FloatTensor([reward]) 
 
         mean_var, std_var, value_var = self.policy_old(Variable(state.unsqueeze(0).cuda(), volatile=True))
         m = Normal(mean_var, std_var)
         action_var = m.sample()
 
         if self.train:
+            if self.stored:
+                self.replay_buffer.store((self.stored + (reward,)))
+
+            if (len(self.replay_buffer) == self.horizon) or done:
+                self._finish_iteration()
+                
             self.stored = (state,
                            value_var.data.cpu()[0],
                            m.log_prob(action_var).data.cpu()[0])
