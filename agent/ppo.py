@@ -1,7 +1,7 @@
 # coding: utf-8
 
 import torch
-from torch import optim
+import torch.optim as optim
 from torch.autograd import Variable
 from torch.distributions import Normal
 from torch.utils.data import TensorDataset, DataLoader
@@ -17,8 +17,9 @@ from net import SharedNetwork
 class PPOAgent(Agent):
     def __init__(
             self,
+            num_outputs,
             horizon=2048,
-            learning_rate=3e-4,
+            lr=3e-4,
             num_epoch=10,
             batch_size=64,
             discount_factor=0.99,
@@ -27,8 +28,9 @@ class PPOAgent(Agent):
             train=True,
             load=False,
             weight_path='./weights'):
+
         self.horizon = horizon
-        self.learning_rate = learning_rate
+        self.lr = lr
         self.num_epoch = num_epoch
         self.batch_size = batch_size
         self.discount_factor = discount_factor
@@ -38,7 +40,7 @@ class PPOAgent(Agent):
         self.load = load
         self.weight_path = weight_path
 
-        self.policy_old = SharedNetwork()
+        self.policy_old = SharedNetwork(num_outputs)
         self.policy_old.eval()
 
         if self.load:
@@ -46,34 +48,37 @@ class PPOAgent(Agent):
             self.policy_old.load_state_dict(torch.load(self.weight_path))
 
         if self.train:
-            self.policy = SharedNetwork()
+            self.policy = SharedNetwork(num_outputs)
             self.policy.load_state_dict(self.policy_old.state_dict())
             self.policy.train()
 
-            self.policy_optimizer = optim.Adam(self.policy.parameters(), learning_rate)
+            self.policy_optimizer = optim.Adam(self.policy.parameters(), lr)
 
             self.replay_buffer = ReplayBuffer(horizon)
 
-        self.stored = None
+            self.stored = None
 
     def act(self, state_array, reward=0., done=False):
-        state = self._preprocessing(state_array)
-        reward = torch.FloatTensor([reward]) 
+        state = self._preprocessing(state_array).cuda()
 
-        mean_var, std_var, value_var = self.policy_old(Variable(state.unsqueeze(0).cuda(), volatile=True))
+        mean_var, std_var, value_var = self.policy_old(Variable(state, volatile=True))
         m = Normal(mean_var, std_var)
         action_var = m.sample()
 
         if self.train:
+            value = value_var.data
+
+            reward = torch.zeros_like(value) + reward
+
             if self.stored:
-                self.replay_buffer.store((self.stored + (reward,)))
+                self.replay_buffer.store(self.stored + [reward])
 
             if (len(self.replay_buffer) == self.horizon) or done:
                 self._finish_iteration()
-                
-            self.stored = (state,
-                           value_var.data.cpu()[0],
-                           m.log_prob(action_var).data.cpu()[0])
+
+            self.stored = [state,
+                           value,
+                           m.log_prob(action_var).data]
 
         return action_var.data.cpu().numpy()[0]
 
@@ -92,7 +97,7 @@ class PPOAgent(Agent):
         tensor = tensor.permute(2, 0, 1)
         tensor /= 256.
 
-        return tensor
+        return tensor.unsqueeze(0)
 
     def _calculate_advantage(self, rewards, values):
         advantages = torch.zeros_like(rewards)
@@ -115,26 +120,28 @@ class PPOAgent(Agent):
 
         advantages = (advantages - advantages.mean()) / advantages.std()
 
-        data_set_1 = TensorDataset(states, log_probs_old)
-        data_set_2 = TensorDataset(advantages, values_target)
+        dataset_1 = TensorDataset(states, log_probs_old)
+        dataset_2 = TensorDataset(advantages, values_target)
 
-        data_loader_1 = DataLoader(data_set_1, self.batch_size, shuffle=True)
-        data_loader_2 = DataLoader(data_set_2, self.batch_size, shuffle=True)
+        data_loader_1 = DataLoader(dataset_1, self.batch_size, shuffle=True)
+        data_loader_2 = DataLoader(dataset_2, self.batch_size, shuffle=True)
 
         # Update policy network.
         for _ in range(self.num_epoch):
             for (states, log_probs_old), (advantages, values_target) in zip(data_loader_1, data_loader_2):
-                states_var = Variable(states.cuda())
-                log_probs_old_var = Variable(log_probs_old.cuda())
-                advantages_var = Variable(advantages.cuda())
-                values_target_var = Variable(values_target.cuda())
+                states_var = Variable(states)
+                log_probs_old_var = Variable(log_probs_old)
+                advantages_var = Variable(advantages)
+                values_target_var = Variable(values_target)
 
                 means_var, stds_var, values_var = self.policy(states_var)
                 m = Normal(means_var, stds_var)
                 actions_var = m.sample()
                 log_probs_var = m.log_prob(actions_var)
 
-                ratio = torch.exp(log_probs_var - log_probs_old_var)
+                # TODO
+                ratio = torch.exp(log_probs_var.sum(-1) - log_probs_old_var.sum(-1)).unsqueeze(1)
+                # ratio = torch.exp(log_probs_var - log_probs_old_var)
 
                 surrogate_1 = ratio * advantages_var
                 surrogate_2 = torch.clamp(ratio, 1.0 - self.clip_range, 1.0 + self.clip_range) * advantages_var
@@ -143,52 +150,34 @@ class PPOAgent(Agent):
                 value_loss = torch.mean(torch.pow((values_var - values_target_var), 2))
 
                 total_loss = pessimistic_surrogate + value_loss
-                
+
                 self.policy_optimizer.zero_grad()
                 total_loss.backward()
                 self.policy_optimizer.step()
 
         # Update old policy net.
         self.policy_old.load_state_dict(self.policy.state_dict())
-        print('Finished update.')
 
 
 if __name__ == '__main__':
-    def convert_action(action):
-        x = np.array([0, 0, 0])
-        x[0] = action[0]
-        if action[1] > 0:
-            x[1] = action[1]
-        else:
-            x[2] = -action[1]
-        return x
-
-
     import gym
     import time
     import numpy as np
 
-    agent = PPOAgent(load=False)
+    agent = PPOAgent(3, load=False)
     env = gym.make('CarRacing-v0')
     for i in range(1000):
-        print('Begin.')
         ob = env.reset()
         env.render()
         action = agent.act(ob)
-
-        action = convert_action(action)
-
         for x in range(10000):
             ob, r, d, _ = env.step(action)
             env.render()
             action = agent.act(ob, r, d)
-
-            action = convert_action(action)
-
             if d:
-                print('Done i:{},x:{} '.format(i, x))
-                print(time.ctime())
                 print()
+                print(time.ctime())
+                print('Done i:{},x:{} '.format(i, x))
                 d = False
                 agent.save()
                 break

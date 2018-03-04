@@ -14,13 +14,12 @@ class ReplayBuffer(object):
             buffer_size (int):
         """
         self.buffer = deque(maxlen=buffer_size)
-        self.item_len = None
 
     def __len__(self):
         return len(self.buffer)
 
     def get_all(self):
-        samples = [torch.stack([item[i] for item in self.buffer]).float() for i in range(len(self.buffer[0]))]
+        samples = [torch.cat([item[i] for item in self.buffer]).float() for i in range(len(self.buffer[0]))]
         self.buffer.clear()
 
         return samples
@@ -29,7 +28,7 @@ class ReplayBuffer(object):
         if len(self.buffer) >= number:
             samples = [self.buffer.pop() for _ in range(number)]
 
-            return [torch.stack([sample[i] for sample in samples]).float() for i in range(len(samples[0]))]
+            return [torch.cat([sample[i] for sample in samples]).float() for i in range(len(samples[0]))]
 
         else:
             return None
@@ -38,7 +37,7 @@ class ReplayBuffer(object):
         if len(self.buffer) >= number:
             samples = random.sample(self.buffer, number)
 
-            return [torch.stack([sample[i] for sample in samples]).float() for i in range(len(samples[0]))]
+            return [torch.cat([sample[i] for sample in samples]).float() for i in range(len(samples[0]))]
 
         else:
             return None

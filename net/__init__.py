@@ -1,2 +1,5 @@
 # coding: utf-8
-from net.shared import SharedNetwork
+
+from .actor import ActorNetwork
+from .critic import CriticNetwork
+from .shared import SharedNetwork
