@@ -11,16 +11,14 @@ class KeyboardAgent(Agent):
     def __init__(self):
         self.file = h5py.File('./data.h5', 'w')
 
-        self.state_data_set = self.file.create_dataset('state', (10000, 96, 96, 3), np.float32, chunks=(1, 96, 96, 3))
-        self.action_data_set = self.file.create_dataset('action', (10000, 2), np.float32, chunks=(1, 2))
+        self.state_data_set = self.file.create_dataset('state', (1000, 96, 96, 3), np.float32, chunks=(1, 96, 96, 3))
+        self.action_data_set = self.file.create_dataset('action', (1000, 3), np.float32, chunks=(1, 2))
 
         self.action_array = np.zeros((3,), np.float32)
 
         self.count = 0
 
     def act(self, state_array, reward=0, done=False):
-        self.action_array = np.zeros((3,), np.float32)
-
         self.state_data_set[self.count] = state_array
         self.action_data_set[self.count] = self.action_array
 
@@ -55,28 +53,25 @@ class KeyboardAgent(Agent):
             self.action_array[2] = 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import gym
 
     agent = KeyboardAgent()
-
     env = gym.make('CarRacing-v0')
     env.render()
     env.unwrapped.viewer.window.on_key_press = agent.key_press
     env.unwrapped.viewer.window.on_key_release = agent.key_release
-
-    ob = env.reset()
-    env.render()
-    action = agent.act(ob)
-
-    for x in range(100000):
-        ob, r, d, _ = env.step(action)
-        env.render()
-        action = agent.act(ob, r, d)
-
-        if d:
-            print('Done x:{} '.format(x))
-            print()
-            d = False
-            agent.close()
-            break
+    for i in range(1):
+        s = env.reset()
+        total_reward = 0.0
+        steps = 0
+        while True:
+            s, r, done, info = env.step(agent.act(s))
+            total_reward += r
+            if steps % 200 == 0 or done:
+                print("step {} total_reward {:+0.2f}".format(steps, total_reward))
+            steps += 1
+            env.render()
+            if done: break
+    env.close()
+    agent.close()

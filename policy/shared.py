@@ -5,9 +5,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class SharedNetwork(nn.Module):
+class CNNPolicy(nn.Module):
     def __init__(self, num_outputs):
-        super(SharedNetwork, self).__init__()
+        super(CNNPolicy, self).__init__()
         self.conv_1 = nn.Conv2d(3, 16, kernel_size=3, padding=1)
         self.bn_1 = nn.BatchNorm2d(16)
         self.conv_2 = nn.Conv2d(16, 32, kernel_size=3, padding=1)
@@ -17,7 +17,6 @@ class SharedNetwork(nn.Module):
         self.fc_2 = nn.Linear(256, 128)
 
         self.mean_fc = nn.Linear(128, num_outputs)
-        self.std_fc = nn.Linear(128, num_outputs)
         self.std = nn.Parameter(torch.zeros(num_outputs))
         self.value_fc = nn.Linear(128, 1)
 
@@ -42,7 +41,38 @@ class SharedNetwork(nn.Module):
 
         mean = self.mean_fc(x)
 
-        # std = self.std_fc(x)
+        log_std = self.std.expand_as(mean)
+        std = torch.exp(log_std)
+
+        value = self.value_fc(x)
+
+        return mean, std, value
+
+
+class MLPPolicy(nn.Module):
+    def __init__(self, num_inputs, num_outputs):
+        super(MLPPolicy, self).__init__()
+
+        self.fc_1 = nn.Linear(num_inputs, 256)
+        self.fc_2 = nn.Linear(256, 256)
+        self.fc_3 = nn.Linear(256, 128)
+
+        self.mean_fc = nn.Linear(128, num_outputs)
+        self.std = nn.Parameter(torch.zeros(num_outputs))
+        self.value_fc = nn.Linear(128, 1)
+
+        self.float()
+        self.cuda()
+
+    def forward(self, x):
+        x = self.fc_1(x)
+        x = F.tanh(x)
+        x = self.fc_2(x)
+        x = F.tanh(x)
+        x = self.fc_3(x)
+        x = F.tanh(x)
+
+        mean = self.mean_fc(x)
 
         log_std = self.std.expand_as(mean)
         std = torch.exp(log_std)
