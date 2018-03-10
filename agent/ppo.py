@@ -9,8 +9,7 @@ from torch.utils.data import TensorDataset, DataLoader
 
 from agent.core import Agent
 from agent.replay_buffer import ReplayBuffer
-from policy.shared import MLPPolicy
-from policy.shared import CNNPolicy
+from policy.shared import MLPPolicy, CNNPolicy
 
 
 class PPOAgent(Agent):
