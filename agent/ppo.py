@@ -66,9 +66,9 @@ class PPOAgent(Agent):
         state = self._preprocessing(state_array)
 
         mean_var, std_var, value_var = self.policy_old(Variable(state, volatile=True))
-        m = Normal(mean_var, std_var)
 
         if self.train:
+            m = Normal(mean_var, std_var)
             action_var = m.sample()
 
             value = value_var.data
