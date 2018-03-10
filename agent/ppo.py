@@ -27,7 +27,7 @@ class PPOAgent(Agent):
             clip_range=0.2,
             train=True,
             load=False,
-            weight_path='./ppo_weights'):
+            weight_path='./ppo_weights.pth'):
 
         self.num_inputs = num_inputs
         self.horizon = horizon
