@@ -41,7 +41,7 @@ class PPOAgent(Agent):
         self.load = load
         self.weight_path = weight_path
 
-        if num_inputs:
+        if num_inputs is not None:
             self.policy_old = MLPPolicy(num_inputs, num_outputs)
         else:
             self.policy_old = CNNPolicy(num_outputs)
