@@ -127,8 +127,7 @@ class RacingCar(object):
 
         """
         assert len(action) == 2, 'Incorrect input shape.'
-        assert -1. <= action[0] <= 1., 'Incorrect input value.'
-        assert -1. <= action[1] <= 1., 'Incorrect input value.'
+        action = np.minimum(np.maximum(x, -1), 1)
 
         if self._car_info['Done']:
             self._car_info['Steering signal'], self._car_info['Motor signal'] = 0, 0
