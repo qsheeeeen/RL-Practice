@@ -2,7 +2,7 @@
 import copy
 
 import torch
-import torch.optim as optim
+from torch.optim import Adam
 from torch.autograd import Variable
 from torch.distributions import Normal
 from torch.utils.data import TensorDataset, DataLoader
@@ -55,7 +55,7 @@ class PPOAgent(Agent):
             self.policy = copy.deepcopy(self.policy_old)
             self.policy.train()
 
-            self.policy_optimizer = optim.Adam(self.policy.parameters(), lr)
+            self.policy_optimizer = Adam(self.policy.parameters(), lr)
 
             self.replay_buffer = ReplayBuffer(horizon)
 
@@ -68,6 +68,7 @@ class PPOAgent(Agent):
 
         if self.train:
             m = Normal(mean_var, std_var)
+
             action_var = m.sample()
 
             value = value_var.data
@@ -138,7 +139,6 @@ class PPOAgent(Agent):
         data_loader_1 = DataLoader(dataset_1, self.batch_size)
         data_loader_2 = DataLoader(dataset_2, self.batch_size)
 
-        # Update policy network.
         for _ in range(self.num_epoch):
             for (states, actions_old), (advantages, values_target) in zip(data_loader_1, data_loader_2):
                 states_var = Variable(states)
@@ -168,7 +168,6 @@ class PPOAgent(Agent):
                 total_loss.backward()
                 self.policy_optimizer.step()
 
-        # Update old policy net.
         self.policy_old.load_state_dict(self.policy.state_dict())
 
 
@@ -185,7 +184,7 @@ if __name__ == '__main__':
     env = gym.make('CarRacing-v0')
     inputs = env.observation_space.shape[0]
     outputs = env.action_space.shape[0]
-    agent = PPOAgent(None, outputs, load=True)
+    agent = PPOAgent(None, outputs, load=False)
     for i in range(10000):
         ob = env.reset()
         env.render()

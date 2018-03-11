@@ -9,27 +9,26 @@ class CNNPolicy(nn.Module):
     def __init__(self, num_outputs):
         super(CNNPolicy, self).__init__()
         self.features = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=11, stride=4, padding=2),
+            nn.Conv2d(3, 16, kernel_size=11, stride=4, padding=2),
+            nn.BatchNorm2d(16),
             nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=3, stride=2),
-            nn.Conv2d(64, 192, kernel_size=5, padding=2),
+            nn.Conv2d(16, 32, kernel_size=5, padding=2),
+            nn.BatchNorm2d(32),
             nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=3, stride=2),
-            nn.Conv2d(192, 384, kernel_size=3, padding=1),
+            nn.Conv2d(32, 64, kernel_size=3, padding=1),
+            nn.BatchNorm2d(64),
             nn.ReLU(inplace=True),
-            nn.Conv2d(384, 256, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(256, 256, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=3, stride=2),
         )
-        self.conv_1 = nn.Conv2d(3, 16, kernel_size=3, padding=1)
-        self.bn_1 = nn.BatchNorm2d(16)
-        self.conv_2 = nn.Conv2d(16, 32, kernel_size=3, padding=1)
-        self.bn_2 = nn.BatchNorm2d(32)
 
-        self.fc_1 = nn.Linear(294912, 256)
-        self.fc_2 = nn.Linear(256, 128)
+        self.classifier = nn.Sequential(
+            nn.Dropout(),
+            nn.Linear(33856, 512),
+            nn.ReLU(inplace=True),
+            nn.Dropout(),
+            nn.Linear(512, 256),
+            nn.ReLU(inplace=True),
+            nn.Linear(256, 128),
+        )
 
         self.mean_fc = nn.Linear(128, num_outputs)
         self.std = nn.Parameter(torch.zeros(num_outputs))
@@ -39,20 +38,9 @@ class CNNPolicy(nn.Module):
         self.cuda()
 
     def forward(self, x):
-        x = self.conv_1(x)
-        x = self.bn_1(x)
-        x = F.tanh(x)
-
-        x = self.conv_2(x)
-        x = self.bn_2(x)
-        x = F.tanh(x)
-
+        x = self.features(x)
         x = x.view(x.size(0), -1)
-
-        x = self.fc_1(x)
-        x = F.tanh(x)
-        x = self.fc_2(x)
-        x = F.tanh(x)
+        x = self.classifier(x)
 
         mean = self.mean_fc(x)
 
