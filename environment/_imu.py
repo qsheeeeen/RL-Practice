@@ -1,8 +1,5 @@
 # coding: utf-8
 
-import pigpio
-import serial
-
 
 class IMU(object):
     def __init__(self, interrupt_handle):

@@ -9,7 +9,7 @@ class CNNPolicy(nn.Module):
     def __init__(self, num_outputs):
         super(CNNPolicy, self).__init__()
         self.features = nn.Sequential(
-            nn.Conv2d(3, 16, kernel_size=11, stride=4, padding=2),
+            nn.Conv2d(3, 16, kernel_size=7, stride=3, padding=2),
             nn.BatchNorm2d(16),
             nn.ReLU(inplace=True),
             nn.Conv2d(16, 32, kernel_size=5, padding=2),
@@ -17,18 +17,16 @@ class CNNPolicy(nn.Module):
             nn.ReLU(inplace=True),
             nn.Conv2d(32, 64, kernel_size=3, padding=1),
             nn.BatchNorm2d(64),
-            nn.ReLU(inplace=True),
-        )
+            nn.ReLU(inplace=True))
 
         self.classifier = nn.Sequential(
             nn.Dropout(),
-            nn.Linear(33856, 512),
+            nn.Linear(65536, 512),
             nn.ReLU(inplace=True),
             nn.Dropout(),
             nn.Linear(512, 256),
             nn.ReLU(inplace=True),
-            nn.Linear(256, 128),
-        )
+            nn.Linear(256, 128))
 
         self.mean_fc = nn.Linear(128, num_outputs)
         self.std = nn.Parameter(torch.zeros(num_outputs))

@@ -11,15 +11,15 @@ class KeyboardAgent(Agent):
     def __init__(self):
         self.file = h5py.File('./data.h5', 'w')
 
-        self.state_data_set = self.file.create_dataset('state', (1000, 96, 96, 3), np.float32, chunks=(1, 96, 96, 3))
-        self.action_data_set = self.file.create_dataset('action', (1000, 3), np.float32, chunks=(1, 2))
+        self.state_data_set = self.file.create_dataset('state', (10000, 96, 96, 3), np.float32, chunks=(1, 96, 96, 3))
+        self.action_data_set = self.file.create_dataset('action', (10000, 3), np.float32, chunks=(1, 3))
 
         self.action_array = np.zeros((3,), np.float32)
 
         self.count = 0
 
-    def act(self, state_array, reward=0, done=False):
-        self.state_data_set[self.count] = state_array
+    def act(self, state, reward=0, done=False):
+        self.state_data_set[self.count] = state
         self.action_data_set[self.count] = self.action_array
 
         self.count += 1
@@ -54,24 +54,27 @@ class KeyboardAgent(Agent):
 
 
 if __name__ == "__main__":
+    import time
     import gym
 
-    agent = KeyboardAgent()
     env = gym.make('CarRacing-v0')
+    inputs = env.observation_space.shape[0]
+    outputs = env.action_space.shape[0]
+    agent = KeyboardAgent()
     env.render()
     env.unwrapped.viewer.window.on_key_press = agent.key_press
     env.unwrapped.viewer.window.on_key_release = agent.key_release
     for i in range(1):
         s = env.reset()
-        total_reward = 0.0
-        steps = 0
         while True:
-            s, r, done, info = env.step(agent.act(s))
-            total_reward += r
-            if steps % 200 == 0 or done:
-                print("step {} total_reward {:+0.2f}".format(steps, total_reward))
-            steps += 1
+            s, r, d, info = env.step(agent.act(s))
             env.render()
-            if done: break
+            if d:
+                print()
+                print(time.ctime())
+                print('Done i:{}'.format(i))
+                d = False
+                # agent.save()
+                break
     env.close()
     agent.close()

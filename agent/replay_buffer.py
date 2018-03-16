@@ -19,26 +19,15 @@ class ReplayBuffer(object):
         return len(self.buffer)
 
     def get_all(self):
-        samples = [torch.cat([item[i] for item in self.buffer]).float() for i in range(len(self.buffer[0]))]
-        self.buffer.clear()
-
-        return samples
+        return [torch.cat([item[i] for item in self.buffer]).float() for i in range(len(self.buffer[0]))]
 
     def pop(self, number):
-        if len(self.buffer) >= number:
-            samples = [self.buffer.pop() for _ in range(number)]
-
-            return [torch.cat([sample[i] for sample in samples]).float() for i in range(len(samples[0]))]
-
-        else:
-            return None
+        raise NotImplementedError
 
     def random_sample(self, number):
         if len(self.buffer) >= number:
             samples = random.sample(self.buffer, number)
-
             return [torch.cat([sample[i] for sample in samples]).float() for i in range(len(samples[0]))]
-
         else:
             return None
 

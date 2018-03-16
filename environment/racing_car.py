@@ -2,14 +2,10 @@
 
 import os
 import time
-import logging
-
-import picamera
-import pigpio
 
 import numpy as np
-
-from environment.imu import IMU
+import picamera
+import pigpio
 
 
 class RacingCar(object):

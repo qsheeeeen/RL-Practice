@@ -1,8 +1,6 @@
 # coding: utf-8
 
-import torch
 import h5py
-import numpy as np
 import pygame
 
 from agent.core import Agent
@@ -40,7 +38,7 @@ class JoystickAgent(Agent):
             if (gas_signal == 1) and (break_signal == -1):
                 break
 
-    def act(self, state_array, reward=0, done=False):
+    def act(self, state, reward=0, done=False):
         pygame.event.get()
 
         steering = self.joystick.get_axis(self.steering_axis)

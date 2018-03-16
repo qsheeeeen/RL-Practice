@@ -1,10 +1,11 @@
 # coding: utf-8
+
 import copy
 
 import torch
-from torch.optim import Adam
 from torch.autograd import Variable
 from torch.distributions import Normal
+from torch.optim import Adam
 from torch.utils.data import TensorDataset, DataLoader
 
 from agent.core import Agent
@@ -16,10 +17,9 @@ class PPOAgent(Agent):
     def __init__(
             self,
             num_inputs=None,
-            num_outputs=3,
+            num_outputs=2,
             horizon=2048,
             lr=3e-4,
-            weight_decay=0.95,
             num_epoch=10,
             batch_size=64,
             discount_factor=0.99,
@@ -41,10 +41,10 @@ class PPOAgent(Agent):
         self._load = load
         self._weight_path = weight_path
 
-        if num_inputs is not None:
-            self._policy_old = MLPPolicy(num_inputs, num_outputs)
-        else:
+        if num_inputs is None:
             self._policy_old = CNNPolicy(num_outputs)
+        else:
+            self._policy_old = MLPPolicy(num_inputs, num_outputs)
 
         self._policy_old.eval()
 
@@ -56,14 +56,16 @@ class PPOAgent(Agent):
             self._policy = copy.deepcopy(self._policy_old)
             self._policy.train()
 
-            self._policy_optimizer = Adam(self._policy.parameters(), lr, weight_decay)
+            self._policy_optimizer = Adam(self._policy.parameters(), lr)
 
             self._replay_buffer = ReplayBuffer(horizon)
 
             self._stored = None
 
-    def act(self, state_array, reward=0., done=False):
-        state = self._preprocessing(state_array)
+        torch.backends.cudnn.benchmark = True
+
+    def act(self, state, reward=0., done=False):
+        state = self._processing(state)
 
         mean_var, std_var, value_var = self._policy_old(Variable(state, volatile=True))
 
@@ -82,7 +84,7 @@ class PPOAgent(Agent):
             if len(self._replay_buffer) == self._horizon:
                 self._finish_iteration()
 
-            self._stored = [state, value, action_var.data]
+            self._stored = [state, value, action_var.data, m.log_prob(action_var).data]
 
         else:
             action_var = mean_var
@@ -95,7 +97,7 @@ class PPOAgent(Agent):
     def save(self):
         torch.save(self._policy_old.state_dict(), self._weight_path)
 
-    def _preprocessing(self, array):
+    def _processing(self, array):
         try:
             tensor = torch.from_numpy(array).float()
         except RuntimeError:
@@ -121,9 +123,11 @@ class PPOAgent(Agent):
         return advantages
 
     def _finish_iteration(self):
-        samples = self._replay_buffer.get_all()
+        start = time.time()
 
-        states, values_old, actions_old, rewards = samples
+        states, values_old, actions_old, log_probs_old, rewards = self._replay_buffer.get_all()
+
+        self._replay_buffer.clear()
 
         advantages = self._calculate_advantage(rewards, values_old)
 
@@ -133,20 +137,23 @@ class PPOAgent(Agent):
 
         dataset_1 = TensorDataset(states, actions_old)
         dataset_2 = TensorDataset(advantages, values_target)
+        dataset_3 = TensorDataset(log_probs_old, values_target)
 
         data_loader_1 = DataLoader(dataset_1, self._batch_size)
         data_loader_2 = DataLoader(dataset_2, self._batch_size)
+        data_loader_3 = DataLoader(dataset_3, self._batch_size)
 
         for _ in range(self._num_epoch):
-            for (states, actions_old), (advantages, values_target) in zip(data_loader_1, data_loader_2):
+            for ((states, actions_old),
+                 (advantages, values_target),
+                 (log_probs_old, _)) in zip(data_loader_1,
+                                            data_loader_2,
+                                            data_loader_3):
                 states_var = Variable(states)
                 actions_old_var = Variable(actions_old)
                 advantages_var = Variable(advantages)
                 values_target_var = Variable(values_target)
-
-                means_old_var, stds_old_var, values_old_var = self._policy_old(states_var)
-                m_old = Normal(means_old_var, stds_old_var)
-                log_probs_old_var = m_old.log_prob(actions_old_var)
+                log_probs_old_var = Variable(log_probs_old)
 
                 means_var, stds_var, values_var = self._policy(states_var)
                 m = Normal(means_var, stds_var)
@@ -167,6 +174,7 @@ class PPOAgent(Agent):
                 self._policy_optimizer.step()
 
         self._policy_old.load_state_dict(self._policy.state_dict())
+        print("Optim used {}".format(time.time() - start))
 
 
 if __name__ == '__main__':

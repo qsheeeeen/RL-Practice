@@ -1,14 +1,15 @@
 # coding: utf-8
 
-import numpy as np
+import copy
+
 import torch
-from torch import cuda
 from torch import nn
-from torch import optim
 from torch.autograd import Variable
+from torch.optim import Adam
 
 from agent.core import Agent
 from agent.replay_buffer import ReplayBuffer
+from policy import actor, critic
 
 
 # TODO: Init weights.
@@ -17,9 +18,8 @@ from agent.replay_buffer import ReplayBuffer
 class DDPGAgent(Agent):
     def __init__(
             self,
+            num_inputs,
             num_outputs,
-            actor_net,
-            critic_net,
             actor_lr=1e-4,
             critic_lr=1e-3,
             batch_size=16,
@@ -30,6 +30,7 @@ class DDPGAgent(Agent):
             load=False,
             weight_folder='./weights', ):
 
+        self._num_inputs = num_inputs
         self._batch_size = batch_size
         self._discount_factor = discount_factor
         self._tau = tau
@@ -37,94 +38,74 @@ class DDPGAgent(Agent):
         self._load = load
         self._weight_folder = weight_folder
 
-        self._actor = actor_net
-        self._critic = critic_net
-        self._target_actor = actor_net
-        self._target_critic = critic_net
+        if num_inputs is None:
+            self._actor = actor.CNNPolicy(num_outputs)
+            self._critic = critic.CNNPolicy(num_outputs)
+        else:
+            self._actor = actor.MLPPolicy(num_inputs, num_outputs)
+            self._critic = critic.MLPPolicy(num_inputs, num_outputs)
 
-        # TODO:
         if self._load:
-            self.load()
-
-        self._target_actor.eval()
-        self._target_critic.eval()
+            self._critic.load_state_dict(torch.load(self._weight_folder))
+            self._actor.load_state_dict(torch.load(self._weight_folder))
 
         if self._train:
             self._actor.train()
             self._critic.train()
+
+            self._target_actor = copy.deepcopy(self._actor)
+            self._target_critic = copy.deepcopy(self._critic)
+
+            self._target_actor.eval()
+            self._target_critic.eval()
+
+            self._actor_optimizer = Adam(self._critic.parameters(), actor_lr)
+            self._critic_optimizer = Adam(self._critic.parameters(), critic_lr)
+
+            self._critic_criterion = nn.MSELoss().cuda()
+
+            self._replay_buffer = ReplayBuffer(buffer_size)
+
+            self._stored = None
+
         else:
             self._actor.eval()
             self._critic.eval()
 
-        self._target_critic.load_state_dict(self._critic.state_dict())
-        self._target_actor.load_state_dict(self._actor.state_dict())
+    def act(self, state, reward=0, done=False):
 
-        self._actor_optimizer = optim.Adam(self._critic.parameters(), actor_lr)
-        self._critic_optimizer = optim.Adam(self._critic.parameters(), critic_lr)
+        state = self._processing(state)
 
-        self._critic_criterion = nn.MSELoss().cuda()
-
-        self._replay_buffer = ReplayBuffer(buffer_size)
-
-        self._stored = None
-
-    def act(self, state_array, reward, done):
-        """
-        TODO:
-            Handle 'done'.
-            Parameter level noise.
-
-        Args:
-            state_array (np.ndarray):
-            reward (float):
-            done (bool):
-
-        Returns:
-            np.ndarray:
-
-        """
+        action_var = self._actor(Variable(state, volatile=True))
 
         if self._train:
-            # Store transition.
-            if self._last_state_array and self._last_action_array and self._last_reward_array:
-                self._replay_buffer.store(self._stored + [state_array])
+            if self._stored:
+                self._replay_buffer.store(self._stored + [reward, state])
 
-            # Sample a random mini-batch.
             samples = self._replay_buffer.random_sample(self._batch_size)
 
             if samples:
                 last_states, last_actions, last_rewards, states = samples
 
-                # Gey y.
-                y = self._target_actor(states)
-                y = last_rewards + self._discount_factor * self._target_critic(states, y)
+                y = last_rewards + self._discount_factor * self._target_critic(states, self._target_actor(states))
 
-                # Update critic:
                 self._critic_optimizer.zero_grad()
                 critic_loss = self._critic_criterion(self._critic(last_states, last_actions), y)
                 critic_loss.backward()
                 self._critic_optimizer.step()
 
-                # Update actor.
                 self._actor.zero_grad()
                 actor_loss = -torch.mean(self._critic([states, self._actor(states)]))
                 actor_loss.backward()
                 self._actor_optimizer.step()
 
-                # Update target critic.
                 self._target_critic.load_state_dict(self._critic.state_dict())
 
-                # Update target actor.
                 self._target_actor.load_state_dict(self._actor.state_dict())
 
-        # Select action using actor.
-        state = Variable(torch.from_numpy(state_array).float, volatile=True).unsqueeze(0)
+            self._stored = [state, action_var.data]
 
-        action_array = self._actor(state).numpy()
-
-        self._stored = [state_array, action_array, reward]  # TODO: Wrong.
-
-        return action_array
+        return action_var.data.cpu().numpy()[0]
 
     def close(self):
         raise NotImplementedError
@@ -132,49 +113,43 @@ class DDPGAgent(Agent):
     def save(self):
         torch.save(self._actor.state_dict(), self._weight_folder)
 
-    def load(self):
-        self._critic.load_state_dict(torch.load(self._weight_folder))
-        self._actor.load_state_dict(torch.load(self._weight_folder))
+    def _processing(self, array):
+        try:
+            tensor = torch.from_numpy(array).float()
+        except RuntimeError:
+            import numpy as np
 
-        self._target_actor = self._actor.copy()
-        self._target_critic = self._critic.copy()
+            a = np.zeros_like(array) + array
+            tensor = torch.from_numpy(a).float()
+
+        if self._num_inputs is None:
+            tensor = tensor.permute(2, 0, 1)
+            tensor /= 256.
+
+        return tensor.unsqueeze(0).cuda()
 
 
 if __name__ == '__main__':
-    def convert_action(action):
-        x = np.array([0, 0, 0])
-        x[0] = action[0]
-        if action[1] > 0:
-            x[1] = action[1]
-        else:
-            x[2] = -action[1]
-        return x
-
-
     import gym
     import time
     import numpy as np
 
-    agent = DDPGAgent(3, load=False)
     env = gym.make('CarRacing-v0')
-    for i in range(1000):
+    inputs = env.observation_space.shape[0]
+    outputs = env.action_space.shape[0]
+    agent = DDPGAgent(None, outputs, load=False)
+    for i in range(10000):
         ob = env.reset()
         env.render()
         action = agent.act(ob)
-
-        # action = convert_action(action)
-
         for x in range(10000):
             ob, r, d, _ = env.step(action)
             env.render()
             action = agent.act(ob, r, d)
-
-            # action = convert_action(action)
-
             if d:
                 print()
                 print(time.ctime())
                 print('Done i:{},x:{} '.format(i, x))
                 d = False
-                agent.save()
+                # agent.save()
                 break

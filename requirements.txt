@@ -10,4 +10,3 @@ pyglet
 pyserial
 pyzmq
 torch
-visualdl
