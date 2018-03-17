@@ -4,7 +4,7 @@ import h5py
 import numpy as np
 from pyglet.window import key
 
-from agent.core import Agent
+from .core import Agent
 
 
 class KeyboardAgent(Agent):
@@ -51,30 +51,3 @@ class KeyboardAgent(Agent):
             self.action_array[1] = 0
         if k == key.DOWN:
             self.action_array[2] = 0
-
-
-if __name__ == "__main__":
-    import time
-    import gym
-
-    env = gym.make('CarRacing-v0')
-    inputs = env.observation_space.shape[0]
-    outputs = env.action_space.shape[0]
-    agent = KeyboardAgent()
-    env.render()
-    env.unwrapped.viewer.window.on_key_press = agent.key_press
-    env.unwrapped.viewer.window.on_key_release = agent.key_release
-    for i in range(1):
-        s = env.reset()
-        while True:
-            s, r, d, info = env.step(agent.act(s))
-            env.render()
-            if d:
-                print()
-                print(time.ctime())
-                print('Done i:{}'.format(i))
-                d = False
-                # agent.save()
-                break
-    env.close()
-    agent.close()

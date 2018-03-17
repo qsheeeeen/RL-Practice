@@ -7,12 +7,10 @@ from torch import nn
 from torch.autograd import Variable
 from torch.optim import Adam
 
-from agent.core import Agent
-from agent.replay_buffer import ReplayBuffer
-from policy import actor, critic
-
-
-# TODO: Init weights.
+from .core import Agent
+from .policy.actor import CNNActor, MLPActor
+from .policy.critic import CNNCritic, MLPCritic
+from .replay_buffer import ReplayBuffer
 
 
 class DDPGAgent(Agent):
@@ -39,11 +37,11 @@ class DDPGAgent(Agent):
         self._weight_folder = weight_folder
 
         if num_inputs is None:
-            self._actor = actor.CNNPolicy(num_outputs)
-            self._critic = critic.CNNPolicy(num_outputs)
+            self._actor = CNNActor(num_outputs)
+            self._critic = CNNCritic(num_outputs)
         else:
-            self._actor = actor.MLPPolicy(num_inputs, num_outputs)
-            self._critic = critic.MLPPolicy(num_inputs, num_outputs)
+            self._actor = MLPActor(num_inputs, num_outputs)
+            self._critic = MLPCritic(num_inputs, num_outputs)
 
         if self._load:
             self._critic.load_state_dict(torch.load(self._weight_folder))

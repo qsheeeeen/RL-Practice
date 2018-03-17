@@ -8,9 +8,9 @@ from torch.distributions import Normal
 from torch.optim import Adam
 from torch.utils.data import TensorDataset, DataLoader
 
-from agent.core import Agent
-from agent.replay_buffer import ReplayBuffer
-from policy.shared import MLPPolicy, CNNPolicy
+from .core import Agent
+from .policy.shared import MLPPolicy, CNNPolicy
+from .replay_buffer import ReplayBuffer
 
 
 class PPOAgent(Agent):
@@ -56,7 +56,7 @@ class PPOAgent(Agent):
             self._policy = copy.deepcopy(self._policy_old)
             self._policy.train()
 
-            self._policy_optimizer = Adam(self._policy.parameters(), lr)
+            self._policy_optimizer = Adam(self._policy.parameters(), lr=lr, eps=1e-5)
 
             self._replay_buffer = ReplayBuffer(horizon)
 
@@ -123,8 +123,6 @@ class PPOAgent(Agent):
         return advantages
 
     def _finish_iteration(self):
-        start = time.time()
-
         states, values_old, actions_old, log_probs_old, rewards = self._replay_buffer.get_all()
 
         self._replay_buffer.clear()
@@ -133,7 +131,7 @@ class PPOAgent(Agent):
 
         values_target = advantages + values_old
 
-        advantages = (advantages - advantages.mean()) / advantages.std()
+        # advantages = (advantages - advantages.mean()) / advantages.std()
 
         dataset_1 = TensorDataset(states, actions_old)
         dataset_2 = TensorDataset(advantages, values_target)
@@ -174,30 +172,3 @@ class PPOAgent(Agent):
                 self._policy_optimizer.step()
 
         self._policy_old.load_state_dict(self._policy.state_dict())
-        print("Optim used {}".format(time.time() - start))
-
-
-if __name__ == '__main__':
-    import gym
-    import time
-    import numpy as np
-
-    env = gym.make('CarRacing-v0')
-    inputs = env.observation_space.shape[0]
-    outputs = env.action_space.shape[0]
-    agent = PPOAgent(None, outputs, load=False)
-    for i in range(10000):
-        ob = env.reset()
-        env.render()
-        action = agent.act(ob)
-        for x in range(10000):
-            ob, r, d, _ = env.step(action)
-            env.render()
-            action = agent.act(ob, r, d)
-            if d:
-                print()
-                print(time.ctime())
-                print('Done i:{},x:{} '.format(i, x))
-                d = False
-                # agent.save()
-                break

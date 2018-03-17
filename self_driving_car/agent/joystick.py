@@ -3,7 +3,7 @@
 import h5py
 import pygame
 
-from agent.core import Agent
+from .core import Agent
 
 
 class JoystickAgent(Agent):

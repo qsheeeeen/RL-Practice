@@ -8,11 +8,6 @@ import torch
 
 class ReplayBuffer(object):
     def __init__(self, buffer_size):
-        """
-
-        Args:
-            buffer_size (int):
-        """
         self.buffer = deque(maxlen=buffer_size)
 
     def __len__(self):
