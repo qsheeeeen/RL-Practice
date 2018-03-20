@@ -10,11 +10,11 @@ def main():
     total_reword = 0
     reward_history = []
 
-    env = gym.make('LunarLanderContinuous-v2')
-    # env = gym.make('CarRacing-v0')
+    # env = gym.make('LunarLanderContinuous-v2')
+    env = gym.make('CarRacing-v0')
     inputs = env.observation_space.shape
     outputs = env.action_space.shape
-    agent = PPOAgent(inputs, outputs, load=False)
+    agent = PPOAgent(inputs, outputs, output_limit=(-1, 0.2), load=False)
     for i in range(2500):
         ob = env.reset()
         env.render()
@@ -34,13 +34,13 @@ def main():
                 total_reword = 0
                 break
 
-    name = 'baseline'
+    name = 'car_baseline_limit_gas_0.2'
 
     plt.plot(reward_history)
     plt.title(name)
     plt.ylabel('score')
     plt.xlabel('episode')
-    plt.savefig('./img/'+name+'.png')
+    plt.savefig('./img/' + name + '.png')
 
 
 if __name__ == '__main__':

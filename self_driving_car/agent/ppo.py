@@ -112,6 +112,8 @@ class PPOAgent(Agent):
         if len(self._input_shape) == 3:
             tensor = tensor.permute(2, 0, 1)
             tensor /= 256.
+            tensor *= 2
+            tensor -= 1
 
         return tensor.unsqueeze(0).cuda()
 
