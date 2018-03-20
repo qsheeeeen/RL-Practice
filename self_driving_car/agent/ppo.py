@@ -5,6 +5,7 @@ import copy
 import torch
 from torch.autograd import Variable
 from torch.distributions import Normal
+from torch.nn import SmoothL1Loss
 from torch.optim import Adam
 from torch.utils.data import TensorDataset, DataLoader
 
@@ -16,8 +17,9 @@ from .replay_buffer import ReplayBuffer
 class PPOAgent(Agent):
     def __init__(
             self,
-            num_inputs=None,
-            num_outputs=2,
+            input_shape,
+            output_shape,
+            output_limit=(-1, 1),
             horizon=2048,
             lr=3e-4,
             num_epoch=10,
@@ -27,9 +29,11 @@ class PPOAgent(Agent):
             clip_range=0.2,
             train=True,
             load=False,
+            save=True,
             weight_path='./ppo_weights.pth'):
 
-        self._num_inputs = num_inputs
+        self._input_shape = input_shape
+        self._output_limit = output_limit
         self._horizon = horizon
         self._lr = lr
         self._num_epoch = num_epoch
@@ -39,12 +43,13 @@ class PPOAgent(Agent):
         self._clip_range = clip_range
         self._train = train
         self._load = load
+        self._save = save
         self._weight_path = weight_path
 
-        if num_inputs is None:
-            self._policy_old = CNNPolicy(num_outputs)
+        if len(input_shape) == 3:
+            self._policy_old = CNNPolicy(output_shape[0])
         else:
-            self._policy_old = MLPPolicy(num_inputs, num_outputs)
+            self._policy_old = MLPPolicy(input_shape[0], output_shape[0])
 
         self._policy_old.eval()
 
@@ -57,6 +62,7 @@ class PPOAgent(Agent):
             self._policy.train()
 
             self._policy_optimizer = Adam(self._policy.parameters(), lr=lr, eps=1e-5)
+            self._policy_criterion = SmoothL1Loss().cuda()
 
             self._replay_buffer = ReplayBuffer(horizon)
 
@@ -82,17 +88,14 @@ class PPOAgent(Agent):
                 self._replay_buffer.store(self._stored + [reward])
 
             if len(self._replay_buffer) == self._horizon:
-                self._finish_iteration()
+                self._update_policy()
 
             self._stored = [state, value, action_var.data, m.log_prob(action_var).data]
 
         else:
             action_var = mean_var
 
-        return action_var.data.cpu().numpy()[0]
-
-    def close(self):
-        raise NotImplementedError
+        return torch.clamp(action_var.data, self._output_limit[0], self._output_limit[1]).cpu().numpy()[0]
 
     def save(self):
         torch.save(self._policy_old.state_dict(), self._weight_path)
@@ -106,13 +109,13 @@ class PPOAgent(Agent):
             a = np.zeros_like(array) + array
             tensor = torch.from_numpy(a).float()
 
-        if self._num_inputs is None:
+        if len(self._input_shape) == 3:
             tensor = tensor.permute(2, 0, 1)
             tensor /= 256.
 
         return tensor.unsqueeze(0).cuda()
 
-    def _calculate_advantage(self, rewards, values):
+    def _calculate_advantage(self, rewards, values, ):
         advantages = torch.zeros_like(rewards)
         advantages[-1] = rewards[-1] - values[-1]
 
@@ -122,7 +125,7 @@ class PPOAgent(Agent):
 
         return advantages
 
-    def _finish_iteration(self):
+    def _update_policy(self):
         states, values_old, actions_old, log_probs_old, rewards = self._replay_buffer.get_all()
 
         self._replay_buffer.clear()
@@ -163,7 +166,8 @@ class PPOAgent(Agent):
                 surrogate_2 = torch.clamp(ratio, 1.0 - self._clip_range, 1.0 + self._clip_range) * advantages_var
                 pessimistic_surrogate = -torch.mean(torch.min(surrogate_1, surrogate_2))
 
-                value_loss = torch.mean(torch.pow((values_var - values_target_var), 2))
+                # value_loss = torch.mean(torch.pow((values_var - values_target_var), 2))
+                value_loss = self._policy_criterion(values_var, values_target_var)
 
                 total_loss = pessimistic_surrogate + value_loss
 
@@ -172,3 +176,6 @@ class PPOAgent(Agent):
                 self._policy_optimizer.step()
 
         self._policy_old.load_state_dict(self._policy.state_dict())
+
+        if self._save:
+            self.save()

@@ -11,16 +11,17 @@ class KeyboardAgent(Agent):
     def __init__(self):
         self.file = h5py.File('./data.h5', 'w')
 
-        self.state_data_set = self.file.create_dataset('state', (10000, 96, 96, 3), np.float32, chunks=(1, 96, 96, 3))
-        self.action_data_set = self.file.create_dataset('action', (10000, 3), np.float32, chunks=(1, 3))
+        self.state_dataset = self.file.create_dataset('state', (10000, 96, 96, 3), np.float32, chunks=(1, 96, 96, 3))
+        self.action_dataset = self.file.create_dataset('action', (10000, 3), np.float32, chunks=(1, 3))
+        self.reward_dataset = self.file.create_dataset('reward', (10000, 1), np.float32, chunks=(1, 3))
 
         self.action_array = np.zeros((3,), np.float32)
 
         self.count = 0
 
     def act(self, state, reward=0, done=False):
-        self.state_data_set[self.count] = state
-        self.action_data_set[self.count] = self.action_array
+        self.state_dataset[self.count] = state
+        self.action_dataset[self.count] = self.action_array
 
         self.count += 1
 

@@ -57,8 +57,8 @@ class DDPGAgent(Agent):
             self._target_actor.eval()
             self._target_critic.eval()
 
-            self._actor_optimizer = Adam(self._critic.parameters(), actor_lr)
-            self._critic_optimizer = Adam(self._critic.parameters(), critic_lr)
+            self._actor_optimizer = Adam(self._critic.parameters(), actor_lr, eps=1e-5)
+            self._critic_optimizer = Adam(self._critic.parameters(), critic_lr, eps=1e-5)
 
             self._critic_criterion = nn.MSELoss().cuda()
 
@@ -104,9 +104,6 @@ class DDPGAgent(Agent):
             self._stored = [state, action_var.data]
 
         return action_var.data.cpu().numpy()[0]
-
-    def close(self):
-        raise NotImplementedError
 
     def save(self):
         torch.save(self._actor.state_dict(), self._weight_folder)

@@ -3,7 +3,7 @@
 
 class IMU(object):
     def __init__(self, interrupt_handle):
-        # TODO https://www.raspberrypi.org/documentation/configuration/uart.md
+        # NOTE https://www.raspberrypi.org/documentation/configuration/uart.md
         # /dev/serial0
         pass
 

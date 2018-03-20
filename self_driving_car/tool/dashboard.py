@@ -1,9 +1,7 @@
 # coding: utf-8
 
-import random
 import time
 
-import numpy as np
 import pygame
 
 
@@ -61,20 +59,3 @@ class Dashboard(object):
         else:
             text_bit_map = self._font.render(str(string), True, self._BLACK)
         self._screen.blit(text_bit_map, position)
-
-
-if __name__ == '__main__':
-    # Test. Display random data.
-    dashboard = Dashboard()
-
-    done = False
-    while not done:
-        img = np.random.rand(320, 240, 3).astype(np.float32)
-
-        name = ('Motor signal', 'Steering signal', 'Car speed')
-        num = (random.random(), random.random(), random.random())
-        inf = dict(zip(name, num))
-
-        done = dashboard.update(img, inf)
-
-    print('Closed.')

@@ -9,47 +9,31 @@ import pigpio
 
 
 class RacingCar(object):
-    def __init__(self, remote_control, motor_limitation=0.6):
-        """Init environment
-
-        TODO:
-            Add IMU for detecting crash.
-
-        Notes:
-            Hardware:
-                ECS controlled motor.
-                Steering servo.
-
-        Args:
-            motor_limitation (float): A number less than 1. Limiting the motor signal (for safety reason).
-
-        Raises:
-            AssertionError: If motor_limitation is greater than 1.
-        """
+    def __init__(self, motor_limitation=0.6):
         assert motor_limitation <= 1, '"motor_limitation" should not be greater than 1.'
 
         # Pin configuration.
-        self._STEERING_SERVO_PIN = 4
-        self._MOTOR_PIN = 17
-        self._LEFT_LINE_SENSOR_PIN = 1
-        self._RIGHT_LINE_SENSOR_PIN = 2
-        self._ENCODER_DIR_PIN = 12
-        self._ENCODER_PUL_PIN = 12
-        self._ENCODER_ZERO_PIN = 13
-        self._FORWARD_PIN_LEVEL = 1
+        self._STEERING_SERVO_PIN = 23
+        self._MOTOR_PIN = 24
+        self._LEFT_LINE_SENSOR_PIN = 17
+        self._RIGHT_LINE_SENSOR_PIN = 18
+        self._ENCODER_DIR_PIN = 21
+        self._ENCODER_PUL_PIN = 20
+        self._ENCODER_ZERO_PIN = 19
+        self._FORWARD_PIN_LEVEL = 0
 
-        # Hardware configuration. TODO: Servo range.
+        # Hardware configuration.
         self._TIRE_DIAMETER = 0.05
         self._GEAR_RATIO = 145. / 35.
         self._ENCODER_LINE = 512
         self._SERVO_RANGE = 200
-        self._MOTOR_RANGE = 500
+        self._MOTOR_RANGE = 500 * motor_limitation
 
         # Parameters.
         self._SPEED_UPDATE_INTERVAL = 500
         self._REWARD_UPDATE_INTERVAL = 500
 
-        # Set up hardware controlling. TODO: RISING_EDGE or FALLING_EDGE
+        # Set up hardware controlling.
         os.system('sudo pigpiod')
         time.sleep(1)
 
@@ -58,8 +42,8 @@ class RacingCar(object):
         self._pi.set_watchdog(self._ENCODER_ZERO_PIN, self._REWARD_UPDATE_INTERVAL)
         self._pi.callback(self._ENCODER_PUL_PIN, pigpio.RISING_EDGE, self._interrupt_handle)
         self._pi.callback(self._ENCODER_ZERO_PIN, pigpio.RISING_EDGE, self._interrupt_handle)
-        self._pi.callback(self._LEFT_LINE_SENSOR_PIN, pigpio.RISING_EDGE, self._interrupt_handle)
-        self._pi.callback(self._RIGHT_LINE_SENSOR_PIN, pigpio.RISING_EDGE, self._interrupt_handle)
+        self._pi.callback(self._LEFT_LINE_SENSOR_PIN, pigpio.FALLING_EDGE, self._interrupt_handle)
+        self._pi.callback(self._RIGHT_LINE_SENSOR_PIN, pigpio.FALLING_EDGE, self._interrupt_handle)
 
         # TODO: Set up IMU.
 
@@ -80,16 +64,14 @@ class RacingCar(object):
             'Steering signal': 0,
             'Motor signal': 0,
             'Reward': 0,
-            'Car speed': 0,
+            'Speed': 0,
             'Done': False}
-
-        self._motor_limitation = motor_limitation
 
         self._encoder_pulse_count = 0
 
         # For init agent.
-        self.sample_state = np.random.rand(self._image_height, self._image_width, 3).astype(np.float32)
-        self.sample_action = (np.random.rand(2) * 2 - 1).astype(np.float32)
+        self.observation_space = np.random.rand(self._image_height, self._image_width, 3).astype(np.float32)
+        self.action_space = (np.random.rand(2) * 2 - 1).astype(np.float32)
 
     def reset(self):
         self._update_pwm(0, 0)
@@ -99,7 +81,7 @@ class RacingCar(object):
             'Steering signal': 0,
             'Motor signal': 0,
             'Reward': 0,
-            'Car speed': 0,
+            'Speed': 0,
             'Done': False}
 
         return self._image
@@ -156,7 +138,7 @@ class RacingCar(object):
             if level == pigpio.TIMEOUT:
                 s = self._encoder_pulse_count / self._ENCODER_LINE * np.pi * self._TIRE_DIAMETER
                 t = self._SPEED_UPDATE_INTERVAL / 1000
-                self._car_info['Car speed'] = s / t * self._GEAR_RATIO
+                self._car_info['Speed'] = s / t * self._GEAR_RATIO
                 self._encoder_pulse_count = 0
 
         elif gpio == self._ENCODER_ZERO_PIN:
@@ -172,8 +154,6 @@ class RacingCar(object):
 
         def scale_range(old_value, old_min, old_max, new_min, new_max):
             return ((old_value - old_min) / (old_max - old_min)) * (new_max - new_min) + new_min
-
-        motor_signal *= self._motor_limitation
 
         pwm_wave = scale_range(steering_signal, -1, 1, (1500 - self._SERVO_RANGE), (1500 + self._SERVO_RANGE))
         self._pi.set_servo_pulsewidth(self._STEERING_SERVO_PIN, pwm_wave)
