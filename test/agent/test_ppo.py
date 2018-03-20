@@ -34,8 +34,13 @@ def main():
                 total_reword = 0
                 break
 
+    name = 'baseline'
+
     plt.plot(reward_history)
-    plt.savefig('./img/baseline.png')
+    plt.title(name)
+    plt.ylabel('score')
+    plt.xlabel('episode')
+    plt.savefig('./img/'+name+'.png')
 
 
 if __name__ == '__main__':
