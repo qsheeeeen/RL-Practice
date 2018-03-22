@@ -10,10 +10,9 @@ class CNNPolicy(nn.Module):
         super(CNNPolicy, self).__init__()
 
         self.conv_1 = nn.Conv2d(3, 16, kernel_size=8, stride=4)
-
         self.conv_2 = nn.Conv2d(16, 32, kernel_size=4, stride=2)
 
-        self.fc_1 = nn.Linear(92416, 256)
+        self.fc = nn.Linear(3200, 256)
 
         self.mean_fc = nn.Linear(256, num_outputs)
         self.std = nn.Parameter(torch.zeros(num_outputs))
@@ -24,14 +23,14 @@ class CNNPolicy(nn.Module):
 
     def forward(self, x):
         x = self.conv_1(x)
-        x = F.relu(x
+        x = F.relu(x)
 
         x = self.conv_2(x)
         x = F.relu(x)
                    
         x = x.view(x.size(0), -1)
 
-        x = self.fc_1(x)
+        x = self.fc(x)
         x = F.relu(x)
 
         mean = self.mean_fc(x)

@@ -12,6 +12,9 @@ from torch.utils.data import TensorDataset, DataLoader
 from .core import Agent
 from .policy.shared import MLPPolicy, CNNPolicy
 from .replay_buffer import ReplayBuffer
+from .noise import AdaptiveNoise
+
+torch.manual_seed(123)
 
 
 class PPOAgent(Agent):
@@ -64,6 +67,8 @@ class PPOAgent(Agent):
             self._policy_optimizer = Adam(self._policy.parameters(), lr=lr, eps=1e-5)
             self._policy_criterion = SmoothL1Loss().cuda()
 
+            # self.noise = AdaptiveNoise()
+
             self._replay_buffer = ReplayBuffer(horizon)
 
             self._stored = None
@@ -111,9 +116,7 @@ class PPOAgent(Agent):
 
         if len(self._input_shape) == 3:
             tensor = tensor.permute(2, 0, 1)
-            tensor /= 256.
-            tensor *= 2
-            tensor -= 1
+            tensor = tensor / 128 - 1
 
         return tensor.unsqueeze(0).cuda()
 
@@ -178,6 +181,8 @@ class PPOAgent(Agent):
                 self._policy_optimizer.step()
 
         self._policy_old.load_state_dict(self._policy.state_dict())
+        print('Policy updated.')
 
         if self._save:
+            print('Saved.')
             self.save()

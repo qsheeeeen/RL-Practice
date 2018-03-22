@@ -33,7 +33,7 @@ class RacingCar(object):
         self._SPEED_UPDATE_INTERVAL = 500
         self._REWARD_UPDATE_INTERVAL = 500
 
-        # Set up hardware controlling.
+        # Hardware controlling.
         os.system('sudo pigpiod')
         time.sleep(1)
 
@@ -45,12 +45,10 @@ class RacingCar(object):
         self._pi.callback(self._LEFT_LINE_SENSOR_PIN, pigpio.FALLING_EDGE, self._interrupt_handle)
         self._pi.callback(self._RIGHT_LINE_SENSOR_PIN, pigpio.FALLING_EDGE, self._interrupt_handle)
 
-        # TODO: Set up IMU.
-
         self._update_pwm(0, 0)
 
-        # Set up camera.
-        self._image_width, self._image_height = 320, 240
+        # Camera.
+        self._image_width, self._image_height = 240, 240
         self._image = np.empty((self._image_height, self._image_width, 3), dtype=np.uint8)
 
         self._cam = picamera.Picamera()
@@ -69,7 +67,6 @@ class RacingCar(object):
 
         self._encoder_pulse_count = 0
 
-        # For init agent.
         self.observation_space = np.random.rand(self._image_height, self._image_width, 3).astype(np.float32)
         self.action_space = (np.random.rand(2) * 2 - 1).astype(np.float32)
 
@@ -118,7 +115,6 @@ class RacingCar(object):
         return self._image, self._car_info['Reward'], self._car_info['Done'], self._car_info
 
     def close(self):
-        """Close environment."""
         self._cam.close()
         self._update_pwm(0, 0)
         self._pi.stop()
