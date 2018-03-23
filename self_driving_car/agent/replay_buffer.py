@@ -1,5 +1,3 @@
-# coding: utf-8
-
 import random
 from collections import deque
 
@@ -15,9 +13,6 @@ class ReplayBuffer(object):
 
     def get_all(self):
         return [torch.cat([item[i] for item in self.buffer]).float() for i in range(len(self.buffer[0]))]
-
-    def pop(self, number):
-        raise NotImplementedError
 
     def random_sample(self, number):
         if len(self.buffer) >= number:

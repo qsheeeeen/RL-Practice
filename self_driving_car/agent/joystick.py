@@ -1,12 +1,8 @@
-# coding: utf-8
-
 import h5py
 import pygame
 
-from .core import Agent
 
-
-class JoystickAgent(Agent):
+class JoystickAgent(object):
     def __init__(self):
         self.steering_axis = 0
         self.break_axis = 2
@@ -53,7 +49,7 @@ class JoystickAgent(Agent):
 
         action_array = np.array((steering, gas_break), dtype=np.float32)
 
-        self.state_data_set[self.count] = state_array
+        self.state_data_set[self.count] = state
         self.action_data_set[self.count] = action_array
 
         self.count += 1

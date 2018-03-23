@@ -1,6 +1,3 @@
-# coding: utf-8
-
-
 class IMU(object):
     def __init__(self, interrupt_handle):
         # NOTE https://www.raspberrypi.org/documentation/configuration/uart.md

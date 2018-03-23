@@ -11,18 +11,20 @@ def main():
     reward_history = []
 
     env = gym.make('CarRacing-v0')
+
     inputs = env.observation_space.shape
     outputs = env.action_space.shape
-    agent = PPOAgent(inputs, outputs, output_limit=(-1, 0.5))
+
+    agent = PPOAgent(inputs, outputs, output_limit=(-1, 0.5), load=True)
+
     for i in range(2500):
         ob = env.reset()
         env.render()
-        action = agent.act(ob)
         for x in range(1000):
-            ob, r, d, _ = env.step(action)
+            a = agent.act(ob)
+            ob, r, d, _ = env.step(a)
             total_reword += r
             env.render()
-            action = agent.act(ob, r, d)
             if d:
                 print()
                 print(time.ctime())

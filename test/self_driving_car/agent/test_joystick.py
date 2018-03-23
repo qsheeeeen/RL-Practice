@@ -1,4 +1,3 @@
-# coding: utf-8
 # https://www.pygame.org/docs/ref/joystick.html
 
 import pygame

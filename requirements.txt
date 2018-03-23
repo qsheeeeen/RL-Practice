@@ -8,7 +8,6 @@ pigpio
 picamera
 pygame
 pyglet
-pyserial
 pyzmq
 torch
 visualdl

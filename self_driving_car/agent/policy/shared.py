@@ -27,7 +27,7 @@ class CNNPolicy(nn.Module):
 
         x = self.conv_2(x)
         x = F.relu(x)
-                   
+
         x = x.view(x.size(0), -1)
 
         x = self.fc(x)

@@ -1,5 +1,3 @@
-# coding: utf-8
-
 import copy
 
 import torch
@@ -8,16 +6,14 @@ from torch.distributions import Normal
 from torch.nn import SmoothL1Loss
 from torch.optim import Adam
 from torch.utils.data import TensorDataset, DataLoader
+from visualdl import LogWriter
 
-from .core import Agent
 from .policy.shared import MLPPolicy, CNNPolicy
 from .replay_buffer import ReplayBuffer
 from .noise import AdaptiveNoise
 
-torch.manual_seed(123)
 
-
-class PPOAgent(Agent):
+class PPOAgent(object):
     def __init__(
             self,
             input_shape,
@@ -67,11 +63,16 @@ class PPOAgent(Agent):
             self._policy_optimizer = Adam(self._policy.parameters(), lr=lr, eps=1e-5)
             self._policy_criterion = SmoothL1Loss().cuda()
 
-            # self.noise = AdaptiveNoise()
+            self._noise = AdaptiveNoise([self._policy.mean_fc])
 
             self._replay_buffer = ReplayBuffer(horizon)
 
             self._stored = None
+
+            self._logger = LogWriter('./workspace', sync_cycle=100)
+
+            with self._logger.mode("train"):
+                self._scalar_train_loss = self._logger.scalar("/scalar_pytorch_train_loss")
 
         torch.backends.cudnn.benchmark = True
 
@@ -149,6 +150,8 @@ class PPOAgent(Agent):
         data_loader_2 = DataLoader(dataset_2, self._batch_size)
         data_loader_3 = DataLoader(dataset_3, self._batch_size)
 
+        train_step = 0
+
         for _ in range(self._num_epoch):
             for ((states, actions_old),
                  (advantages, values_target),
@@ -175,6 +178,8 @@ class PPOAgent(Agent):
                 value_loss = self._policy_criterion(values_var, values_target_var)
 
                 total_loss = pessimistic_surrogate + value_loss
+
+                self._scalar_train_loss.add_record(train_step, float(total_loss))
 
                 self._policy_optimizer.zero_grad()
                 total_loss.backward()

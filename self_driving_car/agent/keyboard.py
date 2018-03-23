@@ -1,19 +1,24 @@
-# coding: utf-8
-
 import h5py
 import numpy as np
 from pyglet.window import key
 
-from .core import Agent
 
+class KeyboardAgent(object):
+    def __init__(self, input_shape, output_shape, data_path='./data.h5', num_sample=10000):
+        self._num_sample = num_sample
+        self.file = h5py.File(data_path, 'w')
 
-class KeyboardAgent(Agent):
-    def __init__(self):
-        self.file = h5py.File('./data.h5', 'w')
+        self.state_dataset = self.file.create_dataset('state',
+                                                      (num_sample,) + input_shape,
+                                                      np.float32,
+                                                      chunks=(1, 96, 96, 3))
 
-        self.state_dataset = self.file.create_dataset('state', (10000, 96, 96, 3), np.float32, chunks=(1, 96, 96, 3))
-        self.action_dataset = self.file.create_dataset('action', (10000, 3), np.float32, chunks=(1, 3))
-        self.reward_dataset = self.file.create_dataset('reward', (10000, 1), np.float32, chunks=(1, 3))
+        self.action_dataset = self.file.create_dataset('action',
+                                                       (num_sample,) + output_shape,
+                                                       np.float32,
+                                                       chunks=(1, 3))
+
+        self.reward_dataset = self.file.create_dataset('reward', (num_sample, 1), np.float32, chunks=(1, 1))
 
         self.action_array = np.zeros((3,), np.float32)
 
@@ -22,16 +27,18 @@ class KeyboardAgent(Agent):
     def act(self, state, reward=0, done=False):
         self.state_dataset[self.count] = state
         self.action_dataset[self.count] = self.action_array
+        self.reward_dataset[self.count] = reward
 
         self.count += 1
+
+        if self.count == self._num_sample:
+            self.close()
 
         return self.action_array
 
     def close(self):
         self.file.close()
-
-    def load(self):
-        raise NotImplementedError
+        quit()
 
     def key_press(self, k, mod):
         if k == key.LEFT:
