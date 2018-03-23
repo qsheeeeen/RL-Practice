@@ -1,6 +1,5 @@
 import gym
 
-
 from self_driving_car import Trainer
 from self_driving_car.agent.policy.shared import CNNPolicy
 

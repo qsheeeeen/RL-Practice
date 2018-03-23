@@ -8,9 +8,9 @@ from torch.optim import Adam
 from torch.utils.data import TensorDataset, DataLoader
 from visualdl import LogWriter
 
+from .noise import AdaptiveNoise
 from .policy.shared import MLPPolicy, CNNPolicy
 from .replay_buffer import ReplayBuffer
-from .noise import AdaptiveNoise
 
 
 class PPOAgent(object):
