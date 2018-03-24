@@ -7,7 +7,7 @@ import pigpio
 
 
 class RacingCar(object):
-    def __init__(self, motor_limitation=0.6):
+    def __init__(self, motor_limitation=0.2):
         assert motor_limitation <= 1, '"motor_limitation" should not be greater than 1.'
 
         # Pin configuration.
@@ -25,7 +25,7 @@ class RacingCar(object):
         self._GEAR_RATIO = 145. / 35.
         self._ENCODER_LINE = 512
         self._SERVO_RANGE = 200
-        self._MOTOR_RANGE = 500 * motor_limitation
+        self._MOTOR_RANGE = 500 * motor_limitation  # TODO: MAYBE WRONG.
 
         # Parameters.
         self._SPEED_UPDATE_INTERVAL = 500
@@ -57,27 +57,29 @@ class RacingCar(object):
         self._cam.meter_mode = 'backlit'
 
         self._car_info = {
-            'Steering signal': 0,
-            'Motor signal': 0,
-            'Reward': 0,
-            'Speed': 0,
-            'Done': False}
+            'steering signal': 0,
+            'motor signal': 0,
+            'reward': 0,
+            'speed': 0,
+            'done': False}
+
+        self._last_reward = 0
 
         self._encoder_pulse_count = 0
 
-        self.observation_space = np.random.rand(self._image_height, self._image_width, 3).astype(np.float32)
-        self.action_space = (np.random.rand(2) * 2 - 1).astype(np.float32)
+        self.observation_space = np.random.randint(0, 256, (self._image_height, self._image_width, 3), np.uint8)
+        self.action_space = np.array([1, -1], np.float32)
 
     def reset(self):
         self._update_pwm(0, 0)
         self._update_image()
 
         self._car_info = {
-            'Steering signal': 0,
-            'Motor signal': 0,
-            'Reward': 0,
-            'Speed': 0,
-            'Done': False}
+            'steering signal': 0,
+            'motor signal': 0,
+            'reward': 0,
+            'speed': 0,
+            'done': False}
 
         return self._image
 
@@ -102,15 +104,18 @@ class RacingCar(object):
         assert len(action) == 2, 'Incorrect input shape.'
         action = np.minimum(np.maximum(action, -1), 1)
 
-        if self._car_info['Done']:
-            self._car_info['Steering signal'], self._car_info['Motor signal'] = 0, 0
+        if self._car_info['done']:
+            self._car_info['steering signal'], self._car_info['motor signal'] = 0, 0
         else:
-            self._car_info['Steering signal'], self._car_info['Motor signal'] = action
+            self._car_info['steering signal'], self._car_info['motor signal'] = action
 
-        self._update_pwm(self._car_info['Steering signal'], self._car_info['Motor signal'])
+        self._update_pwm(self._car_info['steering signal'], self._car_info['motor signal'])
         self._update_image()
 
-        return self._image, self._car_info['Reward'], self._car_info['Done'], self._car_info
+        reward = self._car_info['reward'] - self._last_reward
+        self._last_reward = self._car_info['reward']
+
+        return self._image, self._car_info['reward'], self._car_info['done'], self._car_info
 
     def close(self):
         self._cam.close()
@@ -123,7 +128,7 @@ class RacingCar(object):
 
     def _interrupt_handle(self, gpio, level, tick):
         if (gpio == self._LEFT_LINE_SENSOR_PIN) or (gpio == self._RIGHT_LINE_SENSOR_PIN):
-            self._car_info['Done'] = True
+            self._car_info['done'] = True
 
         elif gpio == self._ENCODER_PUL_PIN:
             if level == pigpio.RISING_EDGE:
@@ -132,17 +137,17 @@ class RacingCar(object):
             if level == pigpio.TIMEOUT:
                 s = self._encoder_pulse_count / self._ENCODER_LINE * np.pi * self._TIRE_DIAMETER
                 t = self._SPEED_UPDATE_INTERVAL / 1000
-                self._car_info['Speed'] = s / t * self._GEAR_RATIO
+                self._car_info['speed'] = s / t * self._GEAR_RATIO
                 self._encoder_pulse_count = 0
 
         elif gpio == self._ENCODER_ZERO_PIN:
             if level == pigpio.RISING_EDGE:
-                self._car_info['Reward'] += 5
+                self._car_info['reward'] += 5
 
             if level == pigpio.TIMEOUT:
-                self._car_info['Reward'] -= 1
-                if self._car_info['Reward'] < 0:
-                    self._car_info['Done'] = True
+                self._car_info['reward'] -= 1
+                if self._car_info['reward'] < 0:
+                    self._car_info['done'] = True
 
     def _update_pwm(self, steering_signal, motor_signal):
 

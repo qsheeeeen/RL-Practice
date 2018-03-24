@@ -1,19 +1,30 @@
 import blosc
+import msgpack
+import zmq
 
 
-def send_array(socket, array):
-    packed_array = blosc.pack_array(array)
-    return socket.send(packed_array)
+class Com(object):
+    def __init__(self, mode='server', ip='192.168.1.100', port='6565'):
+        assert mode in ['server', 'client'], 'Unknown mode: "{}". Only support "server" or "client".'.format(mode)
 
+        context = zmq.Context()
 
-def receive_array(socket):
-    packed_array = socket.recv()
-    return blosc.unpack_array(packed_array)
+        if mode == 'server':
+            self._socket = context.socket(zmq.REP)
+            self._socket.bind('tcp://*:' + port)
 
+        elif mode == 'client':
+            self._socket = context.socket(zmq.REQ)
+            self._socket.connect('tcp://' + ip + ':' + port)
 
-def send_data(socket, data):
-    pass
+    def send_data(self, data, clevel=9, shuffle=blosc.SHUFFLE, flags=0, copy=True, track=False):
+        data = list(data)
+        data[0] = blosc.pack_array(data[0], clevel, shuffle)
+        msg = msgpack.packb(data, use_bin_type=True)
+        return self._socket.send(msg, flags, copy, track)
 
-
-def receive_data(socket):
-    pass
+    def receive_data(self, flags=0, copy=True, track=False):
+        msg = self._socket.recv(flags=flags, copy=copy, track=track)
+        data = msgpack.unpackb(msg)
+        data[0] = blosc.unpack_array(data[0])
+        return data

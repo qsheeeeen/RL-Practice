@@ -30,7 +30,6 @@ def main():
                 print(time.ctime())
                 print('Done i:{},x:{} '.format(i, x))
                 print('Total reward: {}'.format(total_reword))
-                agent.save()
                 reward_history.append(total_reword)
                 total_reword = 0
                 break

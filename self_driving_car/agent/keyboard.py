@@ -11,12 +11,12 @@ class KeyboardAgent(object):
         self.state_dataset = self.file.create_dataset('state',
                                                       (num_sample,) + input_shape,
                                                       np.float32,
-                                                      chunks=(1, 96, 96, 3))
+                                                      chunks=(1,) + input_shape)
 
         self.action_dataset = self.file.create_dataset('action',
                                                        (num_sample,) + output_shape,
                                                        np.float32,
-                                                       chunks=(1, 3))
+                                                       chunks=(1,) + output_shape)
 
         self.reward_dataset = self.file.create_dataset('reward', (num_sample, 1), np.float32, chunks=(1, 1))
 

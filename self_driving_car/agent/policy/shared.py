@@ -1,5 +1,3 @@
-# coding: utf-8
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -47,13 +45,12 @@ class MLPPolicy(nn.Module):
     def __init__(self, num_inputs, num_outputs):
         super(MLPPolicy, self).__init__()
 
-        self.fc_1 = nn.Linear(num_inputs, 128)
-        self.fc_2 = nn.Linear(128, 256)
-        self.fc_3 = nn.Linear(256, 128)
+        self.fc_1 = nn.Linear(num_inputs, 64)
+        self.fc_2 = nn.Linear(64, 64)
 
-        self.mean_fc = nn.Linear(128, num_outputs)
+        self.mean_fc = nn.Linear(64, num_outputs)
         self.std = nn.Parameter(torch.zeros(num_outputs))
-        self.value_fc = nn.Linear(128, 1)
+        self.value_fc = nn.Linear(64, 1)
 
         self.float()
         self.cuda()
@@ -63,9 +60,6 @@ class MLPPolicy(nn.Module):
         x = F.tanh(x)
 
         x = self.fc_2(x)
-        x = F.tanh(x)
-
-        x = self.fc_3(x)
         x = F.tanh(x)
 
         mean = self.mean_fc(x)

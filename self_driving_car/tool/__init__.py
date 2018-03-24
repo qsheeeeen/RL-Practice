@@ -1,2 +1,2 @@
-from .communication import receive_array, send_array
+from .communication import Com
 from .dashboard import Dashboard

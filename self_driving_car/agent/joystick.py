@@ -1,103 +1,64 @@
 import h5py
+import numpy as np
 import pygame
 
 
 class JoystickAgent(object):
-    def __init__(self):
-        self.steering_axis = 0
-        self.break_axis = 2
-        self.gas_axis = 5
+    def __init__(self, input_shape, output_shape, data_path='./data.h5', num_sample=10000):
+        self._STEERING_AXIS = 0
+        self._GAS_BREAK_AXIS = 2
+        self._DONE_BUTTON = 3
 
         pygame.init()
         pygame.joystick.init()
 
         assert pygame.joystick.get_count() > 0, 'Can not find controller.'
-        self.joystick = pygame.joystick.Joystick(0)
-        self.joystick.init()
 
-        self.file = h5py.File('./data.h5', 'w')
+        self._joystick = pygame.joystick.Joystick(0)
+        self._joystick.init()
 
-        self.state_data_set = self.file.create_dataset('state', (10000, 96, 96, 3), np.float32, chunks=(1, 96, 96, 3))
-        self.action_data_set = self.file.create_dataset('action', (10000, 2), np.float32, chunks=(1, 2))
+        self._file = h5py.File(data_path, 'w')
 
-        self.count = 0
+        self._state_dataset = self._file.create_dataset('state',
+                                                        (num_sample,) + input_shape,
+                                                        np.float32,
+                                                        chunks=(1,) + input_shape)
+
+        self._action_dataset = self._file.create_dataset('action',
+                                                         (num_sample,) + output_shape,
+                                                         np.float32,
+                                                         chunks=(1,) + output_shape)
+
+        self._reward_dataset = self._file.create_dataset('reward', (num_sample, 1), np.float32, chunks=(1, 1))
+
+        self._count = 0
 
         while True:
             pygame.event.get()
-            gas_signal = -self.joystick.get_axis(self.gas_axis)
-            break_signal = self.joystick.get_axis(self.break_axis)
+            gas_break_signal = self._joystick.get_axis(self._GAS_BREAK_AXIS)
+            print(gas_break_signal)
 
-            # print(gas_signal)
-            print(break_signal)
-            # print()
-
-            if (gas_signal == 1) and (break_signal == -1):
+            if gas_break_signal == 1:
                 break
 
     def act(self, state, reward=0, done=False):
         pygame.event.get()
 
-        steering = self.joystick.get_axis(self.steering_axis)
+        steering = self._joystick.get_axis(self._STEERING_AXIS)
 
-        gas_signal = -self.joystick.get_axis(self.gas_axis)
-        break_signal = self.joystick.get_axis(self.break_axis)
+        gas_break_signal = self._joystick.get_axis(self._GAS_BREAK_AXIS)
 
-        gas_signal = (gas_signal - 1) / -2
-        break_signal = (break_signal + 1) / 2
+        gas_break_signal = (gas_break_signal - 1) / -2
 
-        gas_break = gas_signal + break_signal
+        action_array = np.array((steering, gas_break_signal), dtype=np.float32)
 
-        action_array = np.array((steering, gas_break), dtype=np.float32)
+        self._state_dataset[self._count] = state
+        self._action_dataset[self._count] = action_array
 
-        self.state_data_set[self.count] = state
-        self.action_data_set[self.count] = action_array
-
-        self.count += 1
+        self._count += 1
 
         return action_array
 
     def close(self):
         pygame.quit()
-        self.file.close()
-
-    def load(self):
-        raise NotImplementedError
-
-
-if __name__ == '__main__':
-    def convert_action(action):
-        x = np.array([action[0], 0, 0])
-        if action[1] > 0:
-            x[1] = action[1]
-        else:
-            x[2] = -action[1]
-        return x
-
-
-    import gym
-    import time
-    import numpy as np
-
-    agent = JoystickAgent()
-    env = gym.make('CarRacing-v0')
-    print('Begin.')
-    ob = env.reset()
-    env.render()
-    action = agent.act(ob)
-
-    action = convert_action(action)
-
-    for x in range(100000):
-        ob, r, d, _ = env.step(action)
-        env.render()
-        action = agent.act(ob, r, d)
-
-        action = convert_action(action)
-
-        if d:
-            print('Done x:{} '.format(x))
-            print(time.ctime())
-            print()
-            d = False
-            agent.close()
-            break
+        self._file.close()
