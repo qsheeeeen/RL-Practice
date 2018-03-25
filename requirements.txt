@@ -9,5 +9,6 @@ picamera
 pygame
 pyglet
 pyzmq
+scikit-learn
 torch
 visualdl

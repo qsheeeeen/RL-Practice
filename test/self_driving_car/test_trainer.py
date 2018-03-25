@@ -10,9 +10,11 @@ def main():
     inputs = env.observation_space.shape
     outputs = env.action_space.shape
 
+    del env
+
     trainer = Trainer(CNNPolicy, inputs, outputs, './agent/data.h5')
 
-    trainer.fit(batch_size=32, epochs=10)
+    trainer.fit(batch_size=32, epochs=1)
 
     trainer.save()
 

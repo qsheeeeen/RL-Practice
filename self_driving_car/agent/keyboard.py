@@ -4,7 +4,7 @@ from pyglet.window import key
 
 
 class KeyboardAgent(object):
-    def __init__(self, input_shape, output_shape, data_path='./data.h5', num_sample=10000):
+    def __init__(self, input_shape, output_shape, data_path='./data.hdf5', num_sample=10000):
         self._num_sample = num_sample
         self.file = h5py.File(data_path, 'w')
 

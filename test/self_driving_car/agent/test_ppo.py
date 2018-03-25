@@ -4,6 +4,7 @@ import gym
 import matplotlib.pyplot as plt
 
 from self_driving_car.agent import PPOAgent
+from self_driving_car.policy.shared import CNNPolicy
 
 
 def main():
@@ -15,7 +16,7 @@ def main():
     inputs = env.observation_space.shape
     outputs = env.action_space.shape
 
-    agent = PPOAgent(inputs, outputs, output_limit=(-1, 0.5), load=True)
+    agent = PPOAgent(CNNPolicy, inputs, outputs, output_limit=(-1, 1), load=True)
 
     for i in range(2500):
         ob = env.reset()
@@ -25,14 +26,13 @@ def main():
             ob, r, d, _ = env.step(a)
             total_reword += r
             env.render()
-            if d:
-                print()
-                print(time.ctime())
-                print('Done i:{},x:{} '.format(i, x))
-                print('Total reward: {}'.format(total_reword))
-                reward_history.append(total_reword)
-                total_reword = 0
-                break
+
+        print()
+        print(time.ctime())
+        print('Done i:{},x:{} '.format(i, x))
+        print('Total reward: {}'.format(total_reword))
+        reward_history.append(total_reword)
+        total_reword = 0
 
     name = 'car_baseline'
 

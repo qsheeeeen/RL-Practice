@@ -26,20 +26,20 @@ def client_run():
         data = (array, reward, done, info)
 
         start = time.time()
-        client.send_data(data)
 
+        client.send_data(data)
         receive = client.receive_data()
 
         print('Time used: {}'.format(time.time()-start))
 
         if (data[0] == receive[0]).all():
-            if data[1] == data[1]:
-                if data[2] == data[2]:
-                    if data[3] == data[3]:
-                        print('Check OK.')
-
-        else:
-            print('Not OK')
+            print('Check OK.')
+        if data[1] == data[1]:
+            print('Check OK.')
+        if data[2] == data[2]:
+            print('Check OK.')
+        if data[3] == data[3]:
+            print('Check OK.')
 
 
 def main():

@@ -7,14 +7,13 @@ from torch.nn import SmoothL1Loss
 from torch.optim import Adam
 from torch.utils.data import TensorDataset, DataLoader
 
-from .noise import AdaptiveNoise
-from .policy.shared import MLPPolicy, CNNPolicy
 from .replay_buffer import ReplayBuffer
 
 
 class PPOAgent(object):
     def __init__(
             self,
+            policy,
             input_shape,
             output_shape,
             output_limit=(-1, 1),
@@ -44,11 +43,7 @@ class PPOAgent(object):
         self._save = save
         self._weight_path = weight_path
 
-        if len(input_shape) == 3:
-            self._policy_old = CNNPolicy(output_shape[0])
-        else:
-            self._policy_old = MLPPolicy(input_shape[0], output_shape[0])
-
+        self._policy_old = policy(input_shape, output_shape)
         self._policy_old.eval()
 
         if self._load:
@@ -115,7 +110,7 @@ class PPOAgent(object):
 
         return tensor.unsqueeze(0).cuda()
 
-    def _calculate_advantage(self, rewards, values, ):
+    def _calculate_advantage(self, rewards, values):
         advantages = torch.zeros_like(rewards)
         advantages[-1] = rewards[-1] - values[-1]
 

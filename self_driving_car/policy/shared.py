@@ -4,7 +4,10 @@ import torch.nn.functional as F
 
 
 class CNNPolicy(nn.Module):
-    def __init__(self, num_outputs):
+    def __init__(self, input_shape, output_shape):
+        assert len(input_shape) == 3, 'Unsupported input shape.'
+        assert len(output_shape) == 1, 'Unsupported output shape.'
+
         super(CNNPolicy, self).__init__()
 
         self.conv_1 = nn.Conv2d(3, 16, kernel_size=8, stride=4)
@@ -12,8 +15,8 @@ class CNNPolicy(nn.Module):
 
         self.fc = nn.Linear(3200, 256)
 
-        self.mean_fc = nn.Linear(256, num_outputs)
-        self.std = nn.Parameter(torch.zeros(num_outputs))
+        self.mean_fc = nn.Linear(256, output_shape[0])
+        self.std = nn.Parameter(torch.zeros(output_shape[0]))
         self.value_fc = nn.Linear(256, 1)
 
         self.float()
@@ -42,14 +45,17 @@ class CNNPolicy(nn.Module):
 
 
 class MLPPolicy(nn.Module):
-    def __init__(self, num_inputs, num_outputs):
+    def __init__(self, input_shape, output_shape):
+        assert len(input_shape) == 1, 'Unsupported input shape.'
+        assert len(output_shape) == 1, 'Unsupported output shape.'
+
         super(MLPPolicy, self).__init__()
 
-        self.fc_1 = nn.Linear(num_inputs, 64)
+        self.fc_1 = nn.Linear(input_shape[0], 64)
         self.fc_2 = nn.Linear(64, 64)
 
-        self.mean_fc = nn.Linear(64, num_outputs)
-        self.std = nn.Parameter(torch.zeros(num_outputs))
+        self.mean_fc = nn.Linear(64, output_shape[0])
+        self.std = nn.Parameter(torch.zeros(output_shape[0]))
         self.value_fc = nn.Linear(64, 1)
 
         self.float()

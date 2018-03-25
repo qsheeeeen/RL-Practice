@@ -11,23 +11,23 @@ def main():
     inputs = env.observation_space.shape
     outputs = env.action_space.shape
 
-    agent = KeyboardAgent(inputs, outputs)
+    agent = KeyboardAgent(inputs, outputs, num_sample=2e4)
 
     env.render()
     env.unwrapped.viewer.window.on_key_press = agent.key_press
     env.unwrapped.viewer.window.on_key_release = agent.key_release
 
-    for i in range(20):
+    while True:
         ob = env.reset()
         env.render()
-        for _ in range(1000):
+        while True:
             a = agent.act(ob)
             ob, r, d, info = env.step(a)
             env.render()
             if d:
                 print()
                 print(time.ctime())
-                print('Done i:{}'.format(i))
+                # print('Done i:{}'.format(i))
                 break
 
     env.close()

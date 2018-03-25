@@ -4,7 +4,7 @@ import pygame
 
 
 class JoystickAgent(object):
-    def __init__(self, input_shape, output_shape, data_path='./data.h5', num_sample=10000):
+    def __init__(self, input_shape, output_shape, data_path='./data.hdf5', num_sample=10000):
         self._STEERING_AXIS = 0
         self._GAS_BREAK_AXIS = 2
         self._DONE_BUTTON = 3
