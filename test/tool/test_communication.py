@@ -1,6 +1,6 @@
 import random
-from multiprocessing import Process
 import time
+from multiprocessing import Process
 
 import numpy as np
 
@@ -30,7 +30,7 @@ def client_run():
         client.send_data(data)
         receive = client.receive_data()
 
-        print('Time used: {}'.format(time.time()-start))
+        print('Time used: {}'.format(time.time() - start))
 
         if (data[0] == receive[0]).all():
             print('Check OK.')

@@ -18,7 +18,7 @@ class Dashboard(object):
 
         self.last_time = time.time()
 
-    def update(self, image, info):
+    def update(self, image, info=None):
         if image.max() <= 1:
             image *= 256
 

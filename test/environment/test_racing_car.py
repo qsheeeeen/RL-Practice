@@ -5,18 +5,14 @@ import numpy as np
 from self_driving_car.environment import RacingCar
 
 
-def limit(x):
-    return np.maximum(np.minimum(x, 1), -1)
-
-
 def main():
     env = RacingCar()
+    env.reset()
 
-    ob = env.reset()
     for x in range(10000):
-        ob, r, d, _ = env.step([0.1, 0.1])
-        print(time.ctime())
-        print(_)
+        time.sleep(0.1)
+        a = np.random.rand(2)
+        ob, r, d, _ = env.step(a)
         if d:
             print('Done.')
             break

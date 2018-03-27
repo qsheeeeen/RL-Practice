@@ -11,9 +11,9 @@ from visualdl import LogWriter
 
 class Trainer(object):
     def __init__(self, model, input_shape, output_shape, data_path='./data.hdf5', lr=3e-4):
-        self._model = model(output_shape[0])
+        self._model = model(input_shape, output_shape)
 
-        self._model_optimizer = Adam(self._model.parameters(), lr=lr, eps=1e-5)
+        self._model_optimizer = Adam(self._model.parameters(), lr=lr)
         self._model_criterion = SmoothL1Loss().cuda()
 
         self._file = h5py.File(data_path, 'r')
@@ -22,7 +22,7 @@ class Trainer(object):
         self._action_dataset = self._file['action']
         self._reward_dataset = self._file['reward']
 
-        self._logger = LogWriter('./workspace', sync_cycle=100)
+        self._logger = LogWriter('./logdir', sync_cycle=100)
 
         with self._logger.mode('train'):
             self._train_loss = self._logger.scalar('loss/')
@@ -68,7 +68,7 @@ class Trainer(object):
                 self._model_optimizer.zero_grad()
                 total_loss.backward()
                 self._model_optimizer.step()
-                
+
                 self._train_loss.add_record(training_step, float(total_loss))
                 training_step += 1
 

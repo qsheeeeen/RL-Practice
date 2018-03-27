@@ -57,9 +57,7 @@ class PPOAgent(object):
             self._policy_optimizer = Adam(self._policy.parameters(), lr=lr, eps=1e-5)
             self._policy_criterion = SmoothL1Loss().cuda()
 
-            self._noise = AdaptiveNoise([self._policy.mean_fc])
-
-            self._replay_buffer = ReplayBuffer(horizon)
+            self._replay_buffer = ReplayBuffer()
 
             self._stored = None
 

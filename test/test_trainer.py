@@ -1,7 +1,7 @@
 import gym
 
 from self_driving_car import Trainer
-from self_driving_car.agent.policy.shared import CNNPolicy
+from self_driving_car.policy.shared import CNNPolicy
 
 
 def main():
@@ -12,9 +12,9 @@ def main():
 
     del env
 
-    trainer = Trainer(CNNPolicy, inputs, outputs, './agent/data.h5')
+    trainer = Trainer(CNNPolicy, inputs, outputs, './agent/data.hdf5')
 
-    trainer.fit(batch_size=32, epochs=1)
+    trainer.fit(batch_size=32, epochs=10)
 
     trainer.save()
 

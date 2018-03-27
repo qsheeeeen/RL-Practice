@@ -46,7 +46,7 @@ class KeyboardAgent(object):
         if k == key.RIGHT:
             self.action_array[0] = +1.0
         if k == key.UP:
-            self.action_array[1] = +1.0
+            self.action_array[1] = +0.1
         if k == key.DOWN:
             self.action_array[2] = +0.8  # set 1.0 for wheels to block to zero rotation
 
