@@ -5,8 +5,9 @@ import pygame
 
 class JoystickAgent(object):
     def __init__(self, input_shape, output_shape, data_path='./data.hdf5', num_sample=10000):
-        self._STEERING_AXIS = 0
-        self._GAS_BREAK_AXIS = 2
+        self._STEERING_AXIS = 3
+        self._BREAK_AXIS = 2
+        self._GAS_AXIS = 5
         self._DONE_BUTTON = 3
 
         pygame.init()
@@ -31,6 +32,8 @@ class JoystickAgent(object):
 
         self._reward_dataset = self._file.create_dataset('reward', (num_sample, 1), np.float32, chunks=(1, 1))
 
+        self._num_sample = num_sample
+
         self._count = 0
 
         while True:
@@ -46,16 +49,23 @@ class JoystickAgent(object):
 
         steering = self._joystick.get_axis(self._STEERING_AXIS)
 
-        gas_break_signal = self._joystick.get_axis(self._GAS_BREAK_AXIS)
+        gas_signal = self._joystick.get_axis(self._GAS_AXIS)
+        gas_signal = (gas_signal + 1) / 2
 
-        gas_break_signal = (gas_break_signal - 1) / -2
+        break_signal = self._joystick.get_axis(self._BREAK_AXIS)
+        break_signal = (break_signal + 1) / 2
+
+        gas_break_signal = gas_signal + break_signal
 
         action_array = np.array((steering, gas_break_signal), dtype=np.float32)
 
         self._state_dataset[self._count] = state
         self._action_dataset[self._count] = action_array
+        self._reward_dataset[self._count] = reward
 
         self._count += 1
+        if self._num_sample == self.close():
+            self.close()
 
         return action_array
 

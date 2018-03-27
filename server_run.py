@@ -1,11 +1,12 @@
-from .self_driving_car.agent import PPOAgent
+from .self_driving_car.agent import PPOAgent, JoystickAgent
 from .self_driving_car.policy.shared import CNNPolicy
 from .self_driving_car.tool import Com, Dashboard
 
 
 def main():
     server = Com('server')
-    agent = PPOAgent(CNNPolicy, )
+    # agent = PPOAgent(CNNPolicy, )
+    agent = JoystickAgent((96, 96, 3), (2,))
     dashboard = Dashboard()
 
     while True:
