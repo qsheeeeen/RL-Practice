@@ -15,23 +15,26 @@ def main():
     inputs = env.observation_space.shape
     outputs = env.action_space.shape
 
-    agent = PPOAgent(CNNPolicy, inputs, outputs, output_limit=(-1, 1), load=True)
+    agent = PPOAgent(CNNPolicy, inputs, outputs, output_limit=(-1, 0.5), load=True)
 
     for i in range(2500):
         ob = env.reset()
         env.render()
+        action = agent.act(ob)
         for x in range(1000):
-            a = agent.act(ob)
-            ob, r, d, _ = env.step(a)
+            ob, r, d, _ = env.step(action)
             total_reword += r
             env.render()
-
-        print()
-        print(time.ctime())
-        print('Done i:{},x:{} '.format(i, x))
-        print('Total reward: {}'.format(total_reword))
-        reward_history.append(total_reword)
-        total_reword = 0
+            action = agent.act(ob, r, d)
+            if d:
+                print()
+                print(time.ctime())
+                print('Done i:{},x:{} '.format(i, x))
+                print('Total reward: {}'.format(total_reword))
+                agent.save()
+                reward_history.append(total_reword)
+                total_reword = 0
+                break
 
 
 if __name__ == '__main__':

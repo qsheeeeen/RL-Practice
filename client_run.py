@@ -8,21 +8,27 @@ def main():
 
     env = gym.make('CarRacing-v0')
 
-    ob = env.reset()
-    env.render()
+    for _ in range(2500):
+        ob = env.reset()
+        env.render()
 
-    client.send_data([ob])
-    print('send ob')
+        client.send_data([ob])
+        print('send ob')
 
-    for i in range(10):
         print('wait for action')
         data = client.receive_data()
-
         action = data[0]
 
-        ob, r, d, info = env.step(action)
-        env.render()
-        client.send_data([ob, r, d, info])
+        for _ in range(1000):
+            ob, r, d, info = env.step(action)
+            env.render()
+
+            client.send_data([ob, r, d, info])
+            print('sent ob, r, d, info')
+
+            print('wait for action')
+            data = client.receive_data()
+            action = data[0]
 
 
 if __name__ == '__main__':

@@ -17,20 +17,23 @@ def main():
 
     agent = PPOAgent(CNNPolicy, inputs, outputs)
 
-    for i in range(2500):
-
+    for _ in range(2500):
         print('wait for ob.')
         data = server.receive_data()
         ob = data[0]
 
-        for x in range(1000):
-            action = agent.act(ob)
+        action = agent.act(ob)
+        server.send_data([action])
+        print('data sent.')
+
+        for _ in range(1000):
+            print('wait for ob, r, d, info')
+            data = server.receive_data()
+            ob, r, d, info = data
+
+            action = agent.act(ob, r, d)
             server.send_data([action])
             print('data sent.')
-
-            print('wait for ob.')
-            data = server.receive_data()
-            ob = data[0]
 
 
 if __name__ == '__main__':
