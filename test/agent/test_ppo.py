@@ -1,7 +1,6 @@
 import time
 
 import gym
-import matplotlib.pyplot as plt
 
 from self_driving_car.agent import PPOAgent
 from self_driving_car.policy.shared import CNNPolicy
@@ -33,14 +32,6 @@ def main():
         print('Total reward: {}'.format(total_reword))
         reward_history.append(total_reword)
         total_reword = 0
-
-    name = 'car_baseline'
-
-    plt.plot(reward_history)
-    plt.title(name)
-    plt.ylabel('score')
-    plt.xlabel('episode')
-    plt.savefig('./img/' + name + '.png')
 
 
 if __name__ == '__main__':

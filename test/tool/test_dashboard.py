@@ -14,9 +14,9 @@ def main():
 
         name = ('Motor signal', 'Steering signal', 'Car speed')
         num = (random.random(), random.random(), random.random())
-        inf = dict(zip(name, num))
+        info = dict(zip(name, num))
 
-        done = dashboard.update(img, inf)
+        done = dashboard.update(img, info)
 
     print('Closed.')
 

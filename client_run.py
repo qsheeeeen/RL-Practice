@@ -1,20 +1,28 @@
 import gym
 
-from .self_driving_car.tool import Com
+from self_driving_car.tool import Com
 
 
 def main():
     client = Com('client', '127.0.0.1')
+
     env = gym.make('CarRacing-v0')
 
-    data = env.reset()
+    ob = env.reset()
+    env.render()
 
-    while True:
-        client.send_data(data)
+    client.send_data([ob])
+    print('send ob')
 
-        action = client.receive_data()
+    for i in range(10):
+        print('wait for action')
+        data = client.receive_data()
 
-        env.step(action)
+        action = data[0]
+
+        ob, r, d, info = env.step(action)
+        env.render()
+        client.send_data([ob, r, d, info])
 
 
 if __name__ == '__main__':

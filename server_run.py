@@ -1,8 +1,8 @@
 import gym
 
-from .self_driving_car.agent import PPOAgent
-from .self_driving_car.policy.shared import CNNPolicy
-from .self_driving_car.tool import Com, Dashboard
+from self_driving_car.agent import PPOAgent
+from self_driving_car.policy.shared import CNNPolicy
+from self_driving_car.tool import Com
 
 
 def main():
@@ -15,18 +15,22 @@ def main():
 
     del env
 
-    agent = PPOAgent(CNNPolicy, inputs, outputs, output_limit=(-1, 1), load=True)
+    agent = PPOAgent(CNNPolicy, inputs, outputs)
 
-    # dashboard = Dashboard()
+    for i in range(2500):
 
-    while True:
+        print('wait for ob.')
         data = server.receive_data()
+        ob = data[0]
 
-        action = agent.act(*data[:3])
+        for x in range(1000):
+            action = agent.act(ob)
+            server.send_data([action])
+            print('data sent.')
 
-        server.send_data(action)
-
-        # dashboard.update(data[0], data[-1])
+            print('wait for ob.')
+            data = server.receive_data()
+            ob = data[0]
 
 
 if __name__ == '__main__':
