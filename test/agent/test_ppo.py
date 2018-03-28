@@ -17,7 +17,7 @@ def main():
 
     agent = PPOAgent(CNNPolicy, inputs, outputs, output_limit=(-1, 1))
 
-    for i in range(2500):
+    for i in range(1000):
         ob = env.reset()
         env.render()
         action = agent.act(ob)

@@ -1,6 +1,5 @@
-import gym
-
 from self_driving_car.tool import Com
+from self_driving_car.environment import RacingCar
 
 
 def main():
@@ -9,12 +8,11 @@ def main():
     print('Done')
 
     print('Init env...', end='')
-    env = gym.make('CarRacing-v0')
+    env = RacingCar()
     print('Done')
 
     for _ in range(2500):
         ob = env.reset()
-        env.render()
 
         client.send_data([ob])
         print('\\ \t Send ob', end='\r')
@@ -25,7 +23,6 @@ def main():
 
         for _ in range(1000):
             ob, r, d, info = env.step(action)
-            env.render()
 
             client.send_data([ob, r, d, info])
             print('/ \t Sent ob, r, d, info', end='\r')

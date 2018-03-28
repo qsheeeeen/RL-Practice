@@ -6,7 +6,6 @@ numpy
 pigpio
 picamera
 pygame
-pyglet
 pyzmq
 scikit-learn
 visualdl

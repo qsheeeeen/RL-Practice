@@ -1,21 +1,18 @@
-import gym
-
-from self_driving_car.agent import PPOAgent
-from self_driving_car.policy.shared import CNNPolicy
+from self_driving_car.agent import JoystickAgent
 from self_driving_car.tool import Com
 
 
 def main():
+    print('Init com...', end='')
     server = Com('server')
+    print('Done')
 
-    env = gym.make('CarRacing-v0')
+    inputs = (96, 96, 3)
+    outputs = (2,)
 
-    inputs = env.observation_space.shape
-    outputs = env.action_space.shape
-
-    del env
-
-    agent = PPOAgent(CNNPolicy, inputs, outputs)
+    print('Init agent...', end='')
+    agent = JoystickAgent(inputs, outputs)
+    print('Done')
 
     for _ in range(2500):
         print('\\\t Wait for ob.', end='\r')
