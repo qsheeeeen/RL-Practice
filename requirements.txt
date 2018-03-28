@@ -1,7 +1,6 @@
 blosc
-gym
+gym[box2d]
 h5py
-matplotlib
 msgpack
 numpy
 pigpio

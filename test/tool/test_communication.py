@@ -23,7 +23,7 @@ def client_run():
         done = False
         info = {'asdfasdf': random.random(), 'qwerqwer': random.random()}
 
-        data = (array, reward, done, info)
+        data = [array, reward, done, info]
 
         start = time.time()
 

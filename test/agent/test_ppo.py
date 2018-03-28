@@ -15,7 +15,7 @@ def main():
     inputs = env.observation_space.shape
     outputs = env.action_space.shape
 
-    agent = PPOAgent(CNNPolicy, inputs, outputs, output_limit=(-1, 0.5), load=True)
+    agent = PPOAgent(CNNPolicy, inputs, outputs, output_limit=(-1, 1))
 
     for i in range(2500):
         ob = env.reset()

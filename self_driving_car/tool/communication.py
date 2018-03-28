@@ -18,6 +18,7 @@ class Com(object):
             self._socket.connect('tcp://' + ip + ':' + port)
 
     def send_data(self, data, clevel=9, shuffle=blosc.SHUFFLE, flags=0, copy=True, track=False):
+        data = data.copy()
         data[0] = blosc.pack_array(data[0], clevel, shuffle)
         msg = msgpack.packb(data, use_bin_type=True)
         return self._socket.send(msg, flags, copy, track)

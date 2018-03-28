@@ -1,0 +1,6 @@
+blosc
+msgpack
+numpy
+pigpio
+picamera
+pyzmq
