@@ -1,13 +1,12 @@
 from self_driving_car.tool import Com
 
 
-def main(virtual=False):
+def main(virtual=True):
     print('Init com...', end='\t')
     client = Com('client', '192.168.1.100')
     print('Done.')
 
     print('Init env...', end='\t')
-
     if virtual:
         import gym
         env = gym.make('CarRacing-v0')
@@ -19,6 +18,8 @@ def main(virtual=False):
 
     for _ in range(2500):
         ob = env.reset()
+        if virtual:
+            env.render()
 
         client.send_data([ob])
         print('\\ \t Send ob.', end='\r')
@@ -29,6 +30,8 @@ def main(virtual=False):
 
         for _ in range(1000):
             ob, r, d, info = env.step(action)
+            if virtual:
+                env.render()
 
             client.send_data([ob, r, d, info])
             print('/ \t Sent ob, r, d, info.', end='\r')

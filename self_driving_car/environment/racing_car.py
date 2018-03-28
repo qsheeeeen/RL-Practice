@@ -28,19 +28,14 @@ class RacingCar(object):
         self._SPEED_UPDATE_INTERVAL = 500
         self._REWARD_UPDATE_INTERVAL = 500
 
-        self._car_info = {
-            'steering_signal': 0.,
-            'motor_signal': 0.,
-            'total_reward': 0.,
-            'speed': 0.,
-            'done': False}
-
-        self._last_reward = 0
-
         self._time_limit = time_limit
         self._time_count = 0
 
+        self._last_reward = 0
+        self._total_reward = 0.
         self._encoder_pulse_count = 0
+        self._speed = 0.
+        self._done = False
 
         self._image_width, self._image_height = 96, 96  # TODO: MAYBE WRONG.
         self._image = np.empty((self._image_height, self._image_width, 3), dtype=np.uint8)
@@ -71,12 +66,13 @@ class RacingCar(object):
         self._update_pwm(0, 0)
         self._update_image()
 
-        self._car_info = {
-            'steering_signal': 0,
-            'motor_signal': 0,
-            'total_reward': 0,
-            'speed': 0,
-            'done': False}
+        self._time_count = 0
+
+        self._last_reward = 0
+        self._total_reward = 0.
+        self._encoder_pulse_count = 0
+        self._speed = 0.
+        self._done = False
 
         return self._image
 
@@ -85,23 +81,25 @@ class RacingCar(object):
 
         action = np.minimum(np.maximum(action, -1), 1)
 
-        if self._car_info['done']:
-            self._car_info['steering_signal'], self._car_info['motor_signal'] = 0, 0
+        if self._done:
+            steering_signal, motor_signal = 0, 0
         else:
-            self._car_info['steering_signal'], self._car_info['motor_signal'] = action
+            steering_signal, motor_signal = action
 
-        self._update_pwm(self._car_info['steering_signal'], self._car_info['motor_signal'])
+        self._update_pwm(steering_signal, motor_signal)
 
         self._update_image()
 
-        reward = self._car_info['total_reward'] - self._last_reward
-        self._last_reward = self._car_info['total_reward']
+        reward = self._total_reward - self._last_reward
+        self._last_reward = self._total_reward
 
         self._time_count += 1
         if self._time_count > self._time_limit:
-            self._car_info['done'] = True
+            self._done = True
 
-        return self._image, reward, self._car_info['done'], self._car_info
+        car_info = self._generate_info(steering_signal, motor_signal)
+
+        return self._image, reward, self._done, car_info
 
     def close(self):
         self._cam.close()
@@ -114,7 +112,7 @@ class RacingCar(object):
 
     def _interrupt_handle(self, gpio, level, tick):
         if (gpio == self._LEFT_LINE_SENSOR_PIN) or (gpio == self._RIGHT_LINE_SENSOR_PIN):
-            self._car_info['done'] = True
+            self._done = True
 
         elif gpio == self._ENCODER_PUL_PIN:
             if level == pigpio.RISING_EDGE:
@@ -123,23 +121,23 @@ class RacingCar(object):
             elif level == pigpio.TIMEOUT:
                 s = self._encoder_pulse_count / self._ENCODER_LINE * np.pi * self._TIRE_DIAMETER
                 t = self._SPEED_UPDATE_INTERVAL / 1000
-                self._car_info['speed'] = s / t * self._GEAR_RATIO
+                self.speed = s / t * self._GEAR_RATIO
                 self._encoder_pulse_count = 0
 
             else:
-                raise NotImplementedError
+                raise NotImplementedError('Unknown level for encoder pulse pin: {}.'.format(level))
 
         elif gpio == self._ENCODER_ZERO_PIN:
             if level == pigpio.RISING_EDGE:
-                self._car_info['total_reward'] += 5
+                self._total_reward += 5
 
             elif level == pigpio.TIMEOUT:
-                self._car_info['total_reward'] -= 1
+                self._total_reward -= 1
 
             else:
-                raise NotImplementedError
+                raise NotImplementedError('Unknown level for encoder zero pin: {}.'.format(level))
         else:
-            raise NotImplementedError
+            raise NotImplementedError('Unknown GPIO pin: {}.'.format(gpio))
 
     def _update_pwm(self, steering_signal, motor_signal):
 
@@ -151,3 +149,10 @@ class RacingCar(object):
 
         pwm_wave = scale_range(motor_signal, -1, 1, (1500 - self._MOTOR_RANGE), (1500 + self._MOTOR_RANGE))
         self._pi.set_servo_pulsewidth(self._MOTOR_PIN, pwm_wave)
+
+    def _generate_info(self, steering_signal, motor_signal):
+        return {'steering_signal': steering_signal,
+                'motor_signal': motor_signal,
+                'total_reward': self._total_reward,
+                'speed': self._speed,
+                'done': self._done}

@@ -26,7 +26,7 @@ class Dashboard(object):
         self._screen.fill(self._WHITE)
 
         image_surface = pygame.surfarray.make_surface(image)
-        self._screen.blit(image_surface, (0, 0))
+        self._screen.blit(image_surface, (10, 10))
 
         current_time = time.time()
         fps = 1. / (current_time - self.last_time)

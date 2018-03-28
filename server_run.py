@@ -1,8 +1,13 @@
 from self_driving_car.agent import JoystickAgent
 from self_driving_car.tool import Com
+from self_driving_car.tool.dashboard import Dashboard
 
 
 def main():
+    print('Init dashboard', end='\t')
+    dashboard = Dashboard()
+    print('Done.')
+
     print('Init com...', end='\t')
     server = Com('server')
     print('Done.')
@@ -27,6 +32,8 @@ def main():
             print('/\t Wait for ob, r, d, info.', end='\r')
             data = server.receive_data()
             ob, r, d, info = data
+
+            dashboard.update(ob, info)
 
             action = agent.act(ob, r, d)
             server.send_data([action])

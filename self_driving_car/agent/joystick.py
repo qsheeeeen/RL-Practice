@@ -40,15 +40,22 @@ class JoystickAgent(object):
 
         self._count = 0
 
-        print('Begin init.')
-        print('Push button...')
-
+        print('Push break...')
         while True:
             pygame.event.get()
             sign = self._joystick.get_axis(self._BREAK_AXIS)
             print(sign, end='\r')
             if sign > 0.9:
-                print('OK')
+                print('OK. Now Release.')
+                break
+
+        print('Push gas...')
+        while True:
+            pygame.event.get()
+            sign = self._joystick.get_axis(self._GAS_AXIS)
+            print(sign, end='\r')
+            if sign > 0.9:
+                print('OK. Now Release.')
                 break
 
     def act(self, state, reward=0, done=False):
