@@ -41,7 +41,7 @@ class JoystickAgent(object):
         self._count = 0
 
         print('Begin init.')
-        print('Push button.')
+        print('Push button...')
 
         while True:
             pygame.event.get()

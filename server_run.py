@@ -3,16 +3,16 @@ from self_driving_car.tool import Com
 
 
 def main():
-    print('Init com...', end='')
+    print('Init com...', end='\t')
     server = Com('server')
-    print('Done')
+    print('Done.')
 
     inputs = (96, 96, 3)
     outputs = (2,)
 
-    print('Init agent...', end='')
+    print('Init agent...', end='\t')
     agent = JoystickAgent(inputs, outputs)
-    print('Done')
+    print('Done.')
 
     for _ in range(2500):
         print('\\\t Wait for ob.', end='\r')
