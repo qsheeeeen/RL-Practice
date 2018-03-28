@@ -1,6 +1,3 @@
-import os
-import time
-
 import numpy as np
 import picamera
 import pigpio
@@ -32,9 +29,6 @@ class RacingCar(object):
         self._REWARD_UPDATE_INTERVAL = 500
 
         # Hardware controlling.
-        os.system('sudo pigpiod')
-        time.sleep(1)
-
         self._pi = pigpio.pi()
         self._pi.set_watchdog(self._ENCODER_PUL_PIN, self._SPEED_UPDATE_INTERVAL)
         self._pi.set_watchdog(self._ENCODER_ZERO_PIN, self._REWARD_UPDATE_INTERVAL)
@@ -49,7 +43,7 @@ class RacingCar(object):
         self._image_width, self._image_height = 96, 96  # TODO: MAYBE WRONG.
         self._image = np.empty((self._image_height, self._image_width, 3), dtype=np.uint8)
 
-        self._cam = picamera.Picamera()
+        self._cam = picamera.PiCamera()
         self._cam.resolution = 1640, 1232
         self._cam.framerate = 30
         self._cam.exposure_mode = 'sport'
