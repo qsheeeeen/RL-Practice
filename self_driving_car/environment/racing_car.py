@@ -24,6 +24,23 @@ class RacingCar(object):
         self._SERVO_RANGE = 200
         self._MOTOR_RANGE = 500 * motor_limitation  # TODO: MAYBE WRONG.
 
+        self._car_info = {
+            'steering_signal': 0.,
+            'motor_signal': 0.,
+            'total_reward': 0.,
+            'speed': 0.,
+            'done': False}
+
+        self._last_reward = 0
+
+        self._time_limit = time_limit
+        self._time_count = 0
+
+        self._encoder_pulse_count = 0
+
+        self.observation_space = np.random.randint(0, 256, (self._image_height, self._image_width, 3), np.uint8)
+        self.action_space = np.array([1, -1], np.float32)
+
         # Parameters.
         self._SPEED_UPDATE_INTERVAL = 500
         self._REWARD_UPDATE_INTERVAL = 500
@@ -46,26 +63,9 @@ class RacingCar(object):
         self._cam = picamera.PiCamera()
         self._cam.resolution = 1640, 1232
         self._cam.framerate = 30
-        self._cam.exposure_mode = 'sport'
+        self._cam.exposure_mode = 'sports'
         self._cam.image_effect = 'denoise'
         self._cam.meter_mode = 'backlit'
-
-        self._car_info = {
-            'steering_signal': 0.,
-            'motor_signal': 0.,
-            'total_reward': 0.,
-            'speed': 0.,
-            'done': False}
-
-        self._last_reward = 0
-
-        self._time_limit = time_limit
-        self._time_count = 0
-
-        self._encoder_pulse_count = 0
-
-        self.observation_space = np.random.randint(0, 256, (self._image_height, self._image_width, 3), np.uint8)
-        self.action_space = np.array([1, -1], np.float32)
 
     def reset(self):
         self._update_pwm(0, 0)
