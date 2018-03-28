@@ -1,1 +1,1 @@
-from environment.racing_car import RacingCar
+from .racing_car import RacingCar
