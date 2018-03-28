@@ -24,6 +24,10 @@ class RacingCar(object):
         self._SERVO_RANGE = 200
         self._MOTOR_RANGE = 500 * motor_limitation  # TODO: MAYBE WRONG.
 
+        # Parameters.
+        self._SPEED_UPDATE_INTERVAL = 500
+        self._REWARD_UPDATE_INTERVAL = 500
+
         self._car_info = {
             'steering_signal': 0.,
             'motor_signal': 0.,
@@ -38,12 +42,11 @@ class RacingCar(object):
 
         self._encoder_pulse_count = 0
 
+        self._image_width, self._image_height = 96, 96  # TODO: MAYBE WRONG.
+        self._image = np.empty((self._image_height, self._image_width, 3), dtype=np.uint8)
+
         self.observation_space = np.random.randint(0, 256, (self._image_height, self._image_width, 3), np.uint8)
         self.action_space = np.array([1, -1], np.float32)
-
-        # Parameters.
-        self._SPEED_UPDATE_INTERVAL = 500
-        self._REWARD_UPDATE_INTERVAL = 500
 
         # Hardware controlling.
         self._pi = pigpio.pi()
@@ -57,9 +60,6 @@ class RacingCar(object):
         self._update_pwm(0, 0)
 
         # Camera.
-        self._image_width, self._image_height = 96, 96  # TODO: MAYBE WRONG.
-        self._image = np.empty((self._image_height, self._image_width, 3), dtype=np.uint8)
-
         self._cam = picamera.PiCamera()
         self._cam.resolution = 1640, 1232
         self._cam.framerate = 30
