@@ -61,7 +61,7 @@ class RacingCar(object):
 
         # Camera.
         self._cam = picamera.PiCamera()
-        self._cam.resolution = 1640, 1232
+        self._cam.resolution = 96, 96
         self._cam.framerate = 30
         self._cam.exposure_mode = 'sports'
         self._cam.image_effect = 'denoise'
@@ -110,7 +110,7 @@ class RacingCar(object):
 
     def _update_image(self):
         # TODO: Check image value.
-        self._cam.capture(self._image, 'rgb', use_video_port=True, resize=(self._image_width, self._image_height))
+        self._cam.capture(self._image, 'rgb', use_video_port=True)
 
     def _interrupt_handle(self, gpio, level, tick):
         if (gpio == self._LEFT_LINE_SENSOR_PIN) or (gpio == self._RIGHT_LINE_SENSOR_PIN):

@@ -4,7 +4,7 @@ from self_driving_car.environment import RacingCar
 
 def main():
     print('Init com...', end='')
-    client = Com('client', '127.0.0.1')
+    client = Com('client', '192.168.1.100')
     print('Done')
 
     print('Init env...', end='')
