@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.nn.init as init
 
 
 class CNNPolicy(nn.Module):
@@ -13,11 +14,13 @@ class CNNPolicy(nn.Module):
         self.conv_1 = nn.Conv2d(3, 16, kernel_size=8, stride=4)
         self.conv_2 = nn.Conv2d(16, 32, kernel_size=4, stride=2)
 
-        self.fc = nn.Linear(3200, 256)
+        self.fc = nn.Linear(1568, 256)
 
         self.mean_fc = nn.Linear(256, output_shape[0])
         self.std = nn.Parameter(torch.zeros(output_shape[0]))
         self.value_fc = nn.Linear(256, 1)
+
+        # self.apply(init.xavier_normal)  # TODO
 
         self.float()
         self.cuda()

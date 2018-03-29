@@ -6,6 +6,7 @@ from torch.distributions import Normal
 from torch.nn import SmoothL1Loss
 from torch.optim import Adam
 from torch.utils.data import TensorDataset, DataLoader
+from torchvision.transforms import Compose, CenterCrop, ToPILImage, ToTensor, Grayscale
 
 from .replay_buffer import ReplayBuffer
 
@@ -43,6 +44,14 @@ class PPOAgent(object):
         self._save = save
         self._weight_path = weight_path
 
+        self._preprocessing = Compose([
+            ToPILImage(),
+            CenterCrop(70),
+            Grayscale(),
+            ToTensor()])
+
+        self._input_buffer = ReplayBuffer(3)
+
         self._policy_old = policy(input_shape, output_shape)
         self._policy_old.eval()
 
@@ -57,16 +66,23 @@ class PPOAgent(object):
             self._policy_optimizer = Adam(self._policy.parameters(), lr=lr, eps=1e-5)
             self._policy_criterion = SmoothL1Loss().cuda()
 
-            self._replay_buffer = ReplayBuffer()
+            self._replay_buffer = ReplayBuffer(self._horizon)
 
             self._stored = None
 
         torch.backends.cudnn.benchmark = True
 
-    def act(self, state, reward=0., done=False):
-        state = self._processing(state)
+    def act(self, single_state, reward=0., done=False):
+        single_state = self._processing(single_state)
 
-        mean_var, std_var, value_var = self._policy_old(Variable(state, volatile=True))
+        self._input_buffer.store(single_state)
+
+        if len(self._input_buffer) == 3:
+            state_sequence = self._input_buffer.get_all()
+        else:
+            state_sequence = single_state.expand(-1, 3, -1, -1)
+
+        mean_var, std_var, value_var = self._policy_old(Variable(state_sequence, volatile=True))
 
         if self._train:
             m = Normal(mean_var, std_var)
@@ -83,7 +99,7 @@ class PPOAgent(object):
             if len(self._replay_buffer) == self._horizon:
                 self._update_policy()
 
-            self._stored = [state, value, action_var.data, m.log_prob(action_var).data]
+            self._stored = [state_sequence, value, action_var.data, m.log_prob(action_var).data]
 
         else:
             action_var = mean_var
@@ -94,17 +110,9 @@ class PPOAgent(object):
         torch.save(self._policy_old.state_dict(), self._weight_path)
 
     def _processing(self, array):
-        try:
-            tensor = torch.from_numpy(array).float()
-        except RuntimeError:
-            import numpy as np
+        tensor = self._preprocessing(array)
 
-            a = np.zeros_like(array) + array
-            tensor = torch.from_numpy(a).float()
-
-        if len(self._input_shape) == 3:
-            tensor = tensor.permute(2, 0, 1)
-            tensor = tensor / 128 - 1
+        tensor = tensor * 2 - 1
 
         return tensor.unsqueeze(0).cuda()
 

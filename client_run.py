@@ -32,7 +32,7 @@ def main(virtual=True):
             ob, r, d, info = env.step(action)
             if virtual:
                 env.render()
-
+            # TODO: Check every type.
             client.send_data([ob, r, d, info])
             print('/ \t Sent ob, r, d, info.', end='\r')
 
