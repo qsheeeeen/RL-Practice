@@ -14,11 +14,11 @@ class CNNPolicy(nn.Module):
         self.conv_1 = nn.Conv2d(3, 16, kernel_size=8, stride=4)
         self.conv_2 = nn.Conv2d(16, 32, kernel_size=4, stride=2)
 
-        self.fc = nn.Linear(1568, 256)
+        self.fc = nn.Linear(1568, 512)
 
-        self.mean_fc = nn.Linear(256, output_shape[0])
+        self.mean_fc = nn.Linear(512, output_shape[0])
         self.std = nn.Parameter(torch.zeros(output_shape[0]))
-        self.value_fc = nn.Linear(256, 1)
+        self.value_fc = nn.Linear(512, 1)
 
         # self.apply(init.xavier_normal)  # TODO
 

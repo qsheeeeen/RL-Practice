@@ -17,13 +17,14 @@ class PPOAgent(object):
             policy,
             input_shape,
             output_shape,
-            output_limit=(-1, 1),
+            output_limit=1,
             horizon=2048,
             lr=3e-4,
             num_epoch=10,
             batch_size=64,
             discount_factor=0.99,
             gae_parameter=0.95,
+            vf_coeff=0.5,
             clip_range=0.2,
             train=True,
             load=False,
@@ -38,6 +39,7 @@ class PPOAgent(object):
         self._batch_size = batch_size
         self._discount_factor = discount_factor
         self._gae_parameter = gae_parameter
+        self._vf_coeff = vf_coeff
         self._clip_range = clip_range
         self._train = train
         self._load = load
@@ -46,8 +48,8 @@ class PPOAgent(object):
 
         self._preprocessing = Compose([
             ToPILImage(),
-            CenterCrop(70),
             Grayscale(),
+            CenterCrop(72),
             ToTensor()])
 
         self._input_buffer = ReplayBuffer(3)
@@ -104,7 +106,7 @@ class PPOAgent(object):
         else:
             action_var = mean_var
 
-        return torch.clamp(action_var.data, self._output_limit[0], self._output_limit[1]).cpu().numpy()[0]
+        return torch.clamp(action_var.data, -self._output_limit, self._output_limit).cpu().numpy()[0]
 
     def save(self):
         torch.save(self._policy_old.state_dict(), self._weight_path)
@@ -112,17 +114,11 @@ class PPOAgent(object):
     def _processing(self, array):
         tensor = self._preprocessing(array)
 
-        tensor = tensor * 2 - 1
-
         return tensor.unsqueeze(0).cuda()
 
-    def _calculate_advantage(self, rewards, values):
-        advantages = torch.zeros_like(rewards)
-        advantages[-1] = rewards[-1] - values[-1]
-
-        for t in reversed(range(len(rewards) - 1)):
-            delta = rewards[t] + self._discount_factor * values[t + 1] - values[t]
-            advantages[t] = delta + self._discount_factor * self._gae_parameter * advantages[t + 1]
+    @staticmethod
+    def _calculate_advantage(rewards, values):
+        advantages = rewards - values
 
         return advantages
 
@@ -133,13 +129,11 @@ class PPOAgent(object):
 
         advantages = self._calculate_advantage(rewards, values_old)
 
-        values_target = advantages + values_old
-
-        # advantages = (advantages - advantages.mean()) / advantages.std()
+        advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
 
         dataset_1 = TensorDataset(states, actions_old)
-        dataset_2 = TensorDataset(advantages, values_target)
-        dataset_3 = TensorDataset(log_probs_old, values_target)
+        dataset_2 = TensorDataset(advantages, rewards)
+        dataset_3 = TensorDataset(log_probs_old, values_old)
 
         data_loader_1 = DataLoader(dataset_1, self._batch_size)
         data_loader_2 = DataLoader(dataset_2, self._batch_size)
@@ -147,15 +141,16 @@ class PPOAgent(object):
 
         for _ in range(self._num_epoch):
             for ((states, actions_old),
-                 (advantages, values_target),
-                 (log_probs_old, _)) in zip(data_loader_1,
-                                            data_loader_2,
-                                            data_loader_3):
+                 (advantages, rewards),
+                 (log_probs_old, values_old)) in zip(data_loader_1,
+                                                     data_loader_2,
+                                                     data_loader_3):
                 states_var = Variable(states)
                 actions_old_var = Variable(actions_old)
                 advantages_var = Variable(advantages)
-                values_target_var = Variable(values_target)
+                rewards_var = Variable(rewards)
                 log_probs_old_var = Variable(log_probs_old)
+                values_old_var = Variable(values_old)
 
                 means_var, stds_var, values_var = self._policy(states_var)
                 m = Normal(means_var, stds_var)
@@ -163,13 +158,19 @@ class PPOAgent(object):
 
                 ratio = torch.exp(log_probs_var - log_probs_old_var)
 
-                surrogate_1 = ratio * advantages_var
-                surrogate_2 = torch.clamp(ratio, 1.0 - self._clip_range, 1.0 + self._clip_range) * advantages_var
+                surrogate_1 = advantages_var * ratio
+                surrogate_2 = advantages_var * torch.clamp(ratio, 1.0 - self._clip_range, 1.0 + self._clip_range)
                 pessimistic_surrogate = -torch.mean(torch.min(surrogate_1, surrogate_2))
 
-                value_loss = self._policy_criterion(values_var, values_target_var)
+                values_clipped = values_old_var + torch.clamp(values_var - values_old_var,
+                                                              - self._clip_range,
+                                                              self._clip_range)
 
-                total_loss = pessimistic_surrogate + value_loss
+                vf_losses1 = torch.pow((values_var - rewards_var), 2)
+                vf_losses2 = torch.pow((values_clipped - rewards_var), 2)
+                value_loss = .5 * torch.mean(torch.max(vf_losses1, vf_losses2))
+
+                total_loss = pessimistic_surrogate + self._vf_coeff * value_loss
 
                 self._policy_optimizer.zero_grad()
                 total_loss.backward()
