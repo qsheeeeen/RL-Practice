@@ -4,6 +4,13 @@ import torch.nn.functional as F
 import torch.nn.init as init
 
 
+def init_weights(layer):
+    if isinstance(layer, nn.Linear):
+        init.orthogonal(layer.weight)
+    elif isinstance(layer, nn.Conv2d):
+        init.orthogonal(layer.weight)
+
+
 class CNNPolicy(nn.Module):
     def __init__(self, input_shape, output_shape):
         assert len(input_shape) == 3, 'Unsupported input shape.'
@@ -20,7 +27,7 @@ class CNNPolicy(nn.Module):
         self.std = nn.Parameter(torch.zeros(output_shape[0]))
         self.value_fc = nn.Linear(512, 1)
 
-        # self.apply(init.xavier_normal)  # TODO
+        self.apply(init_weights)
 
         self.float()
         self.cuda()
