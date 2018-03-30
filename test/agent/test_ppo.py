@@ -29,8 +29,8 @@ def main():
                 reward_history.append(total_reword)
                 print('-------------------------------------------------------')
                 print('- Done i:{},x:{} '.format(i, x))
-                print('- Total reward: {}'.format(total_reword))
-                print('- Average reward: {}'.format(np.mean(reward_history)))
+                print('- Total reward: {:.4}'.format(total_reword))
+                print('- Average reward: {:.4}'.format(np.mean(reward_history)))
                 print('-------------------------------------------------------')
                 break
 
