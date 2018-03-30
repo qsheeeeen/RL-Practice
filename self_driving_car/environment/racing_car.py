@@ -22,7 +22,7 @@ class RacingCar(object):
         self._GEAR_RATIO = 145. / 35.
         self._ENCODER_LINE = 512
         self._SERVO_RANGE = 200
-        self._MOTOR_RANGE = 500 * motor_limitation  # TODO: MAYBE WRONG.
+        self._MOTOR_RANGE = 500 * motor_limitation
 
         # Parameters.
         self._SPEED_UPDATE_INTERVAL = 500
@@ -37,7 +37,7 @@ class RacingCar(object):
         self._speed = 0.
         self._done = False
 
-        self._image_width, self._image_height = 96, 96  # TODO: MAYBE WRONG.
+        self._image_width, self._image_height = 96, 96
         self._image = np.empty((self._image_height, self._image_width, 3), dtype=np.uint8)
 
         self.observation_space = np.random.randint(0, 256, (self._image_height, self._image_width, 3), np.uint8)
@@ -107,7 +107,6 @@ class RacingCar(object):
         self._pi.stop()
 
     def _update_image(self):
-        # TODO: Check image value.
         self._cam.capture(self._image, 'rgb', use_video_port=True)
 
     def _interrupt_handle(self, gpio, level, tick):

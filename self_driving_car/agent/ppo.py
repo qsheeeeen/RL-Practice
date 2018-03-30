@@ -20,12 +20,12 @@ class PPOAgent(object):
             output_limit=1,
             horizon=2048,
             lr=3e-4,
-            num_epoch=10,
-            batch_size=32,
+            num_epoch=100,
+            batch_size=64,
+            clip_range=0.2,
+            vf_coeff=0.5,
             discount_factor=0.99,
             gae_parameter=0.95,
-            vf_coeff=0.5,
-            clip_range=0.2,
             train=True,
             load=False,
             save=True,
@@ -80,14 +80,12 @@ class PPOAgent(object):
 
         if self._train:
             m = Normal(mean_var, std_var)
-
             action_var = m.sample()
 
             value = value_var.data
-
             reward = torch.zeros_like(value) + reward
 
-            if self._stored:
+            if self._stored is not None:
                 self._replay_buffer.store(self._stored + [reward])
 
             if len(self._replay_buffer) == self._horizon:
@@ -98,13 +96,18 @@ class PPOAgent(object):
         else:
             action_var = mean_var
 
-        return torch.clamp(action_var.data, -self._output_limit, self._output_limit).cpu().numpy()[0]
+        return torch.clamp(action_var.data.cpu(), -self._output_limit, self._output_limit).numpy()[0]
 
     def save(self):
         torch.save(self._policy_old.state_dict(), self._weight_path)
 
     def _processing(self, array):
-        tensor = self._preprocessing(array)
+        if len(array.shape) == 3:
+            tensor = self._preprocessing(array).float()
+        elif len(array.shape) == 1:
+            tensor = torch.from_numpy(array).float()
+        else:
+            raise NotImplementedError
 
         return tensor.unsqueeze(0).cuda()
 
