@@ -4,12 +4,6 @@ import torch.nn.functional as F
 import torch.nn.init as init
 
 
-def init_weights(layer):
-    if isinstance(layer, nn.Linear) or isinstance(layer, nn.Conv2d):
-        init.orthogonal(layer.weight, init.calculate_gain('relu'))
-        layer.bias.data.fill_(0.)
-
-
 class CNNBase(nn.Module):
     def __init__(self, input_shape, output_shape):
         assert len(input_shape) == 3, 'Unsupported input shape.'
@@ -20,7 +14,7 @@ class CNNBase(nn.Module):
         self.conv1 = nn.Conv2d(3, 16, kernel_size=8, stride=4)
         self.conv2 = nn.Conv2d(16, 32, kernel_size=4, stride=2)
 
-        self.fc = nn.Linear(1568, 512)
+        self.fc = nn.Linear(1568, 128)
 
     def forward(self, x):
         x = self.conv1(x)
@@ -37,17 +31,18 @@ class CNNBase(nn.Module):
         return x
 
 
+# TODO: why not converge...
 class CNNPolicy(nn.Module):
     def __init__(self, input_shape, output_shape):
         super(CNNPolicy, self).__init__()
 
         self.base_model = CNNBase(input_shape, output_shape)
 
-        self.mean_fc = nn.Linear(512, output_shape[0])
-        self.std = nn.Parameter(torch.ones(output_shape[0]))
-        self.value_fc = nn.Linear(512, 1)
+        self.mean_fc = nn.Linear(128, output_shape[0])
+        self.std = nn.Parameter(torch.zeros(output_shape[0]))
+        self.value_fc = nn.Linear(128, 1)
 
-        self.apply(init_weights)
+        self.apply(self.init_weights)
 
         self.float()
         self.cuda()
@@ -63,6 +58,12 @@ class CNNPolicy(nn.Module):
         value = self.value_fc(x)
 
         return mean, std, value
+
+    @staticmethod
+    def init_weights(layer):
+        if isinstance(layer, nn.Linear) or isinstance(layer, nn.Conv2d):
+            init.orthogonal(layer.weight, init.calculate_gain('relu'))
+            layer.bias.data.fill_(0.)
 
 
 class LSTMPolicy(nn.Module):
@@ -71,21 +72,31 @@ class LSTMPolicy(nn.Module):
 
         self.base_model = CNNBase(input_shape, output_shape)
 
-        self.rnn = nn.LSTMCell(512, 512)
+        self.rnn = nn.LSTMCell(128, 128)
 
-        self.mean_fc = nn.Linear(512, output_shape[0])
+        self.hidden = None
+
+        self.mean_fc = nn.Linear(128, output_shape[0])
         self.std = nn.Parameter(torch.ones(output_shape[0]))
-        self.value_fc = nn.Linear(512, 1)
+        self.value_fc = nn.Linear(128, 1)
 
-        self.h, c = None, None
-
-        self.apply(init_weights)
+        self.apply(self.base_model.init_weights)
 
         self.float()
         self.cuda()
 
     def forward(self, x):
         x = self.base_model(x)
+
+        if self.hidden is None:
+            self.hidden = self.init_hidden(x)
+
+        self.hidden = self.rnn(x, self.hidden)
+
+        self.hidden[0].detach_()
+        self.hidden[1].detach_()
+
+        x = self.hidden[0]
 
         mean = self.mean_fc(x)
 
@@ -95,6 +106,10 @@ class LSTMPolicy(nn.Module):
         value = self.value_fc(x)
 
         return mean, std, value
+
+    @staticmethod
+    def init_hidden(x):
+        return torch.zeros_like(x), torch.zeros_like(x)
 
 
 class MLPPolicy(nn.Module):
@@ -114,7 +129,7 @@ class MLPPolicy(nn.Module):
         self.std = nn.Parameter(torch.zeros(output_shape[0]))
         self.value_fc = nn.Linear(64, 1)
 
-        self.apply(init_weights)
+        self.apply(self._init_weights)
 
         self.float()
         self.cuda()
@@ -140,3 +155,9 @@ class MLPPolicy(nn.Module):
         value = self.value_fc(vf_h2)
 
         return mean, std, value
+
+    @staticmethod
+    def _init_weights(layer):
+        if isinstance(layer, nn.Linear):
+            init.orthogonal(layer.weight, init.calculate_gain('tanh'))
+            layer.bias.data.fill_(0.)

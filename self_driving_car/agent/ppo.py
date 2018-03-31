@@ -4,6 +4,7 @@ import torch
 from torch.autograd import Variable
 from torch.distributions import Normal
 from torch.nn import SmoothL1Loss
+from torch.nn.utils import clip_grad_norm
 from torch.optim import Adam
 from torch.utils.data import TensorDataset, DataLoader
 from torchvision.transforms import Compose, CenterCrop, ToPILImage, ToTensor
@@ -26,6 +27,7 @@ class PPOAgent(object):
             vf_coeff=0.5,
             discount_factor=0.99,
             gae_parameter=0.95,
+            max_grad_norm=0.5,
             train=True,
             load=False,
             save=True,
@@ -38,10 +40,12 @@ class PPOAgent(object):
         self._lr = lr
         self._num_epoch = num_epoch
         self._batch_size = batch_size
+        self._clip_range = clip_range
+        self._vf_coeff = vf_coeff
         self._discount_factor = discount_factor
         self._gae_parameter = gae_parameter
-        self._vf_coeff = vf_coeff
-        self._clip_range = clip_range
+
+        self._max_grad_norm = max_grad_norm
         self._train = train
         self._load = load
         self._save = save
@@ -130,8 +134,6 @@ class PPOAgent(object):
 
         values_target = advantages + values_old
 
-        advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
-
         dataset_1 = TensorDataset(states, actions_old)
         dataset_2 = TensorDataset(advantages, values_target)
         dataset_3 = TensorDataset(log_probs_old, values_old)
@@ -146,6 +148,9 @@ class PPOAgent(object):
                  (log_probs_old, values_old)) in zip(data_loader_1,
                                                      data_loader_2,
                                                      data_loader_3):
+
+                advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
+
                 states_var = Variable(states)
                 actions_old_var = Variable(actions_old)
                 advantages_var = Variable(advantages)
@@ -175,6 +180,7 @@ class PPOAgent(object):
 
                 self._policy_optimizer.zero_grad()
                 total_loss.backward()
+                clip_grad_norm(self._policy.parameters(), self._max_grad_norm)
                 self._policy_optimizer.step()
 
         self._policy_old.load_state_dict(self._policy.state_dict())
