@@ -4,48 +4,51 @@ import pygame
 
 
 class Dashboard(object):
-    def __init__(self, width=600, high=240):
-        self._BLACK = (0, 0, 0)
-        self._WHITE = (255, 255, 255)
+    def __init__(self, width=600, high=260):
+        self.BLACK = (0, 0, 0)
+        self.WHITE = (255, 255, 255)
+        
+        self.INFO_KET_LEFT = 260
+        self.INFO_VALUE_LEFT = 450
+        
+        self.FRONT_SIZE = 30
 
         pygame.init()
 
-        self._screen = pygame.display.set_mode([width, high])
+        self.screen = pygame.display.set_mode([width, high])
         pygame.display.set_caption("Dashboard")
 
-        self._screen.fill(self._WHITE)
-        self._font = pygame.font.Font(None, 30)
+        self.screen.fill(self.WHITE)
+        self.font = pygame.font.Font(None, self.FRONT_SIZE)
 
         self.last_time = time.time()
 
     def update(self, image, info=None):
-        if image.max() <= 1:
-            image *= 256
-
         y_position = 10
-        self._screen.fill(self._WHITE)
+        self.screen.fill(self.WHITE)
 
         image_surface = pygame.surfarray.make_surface(image)
         image_surface = pygame.transform.rotate(image_surface, -90)
         image_surface = pygame.transform.flip(image_surface, True, False)
         image_surface = pygame.transform.scale(image_surface, (240, 240))
-        self._screen.blit(image_surface, (10, 10))
+        self.screen.blit(image_surface, (10, 10))
 
         current_time = time.time()
         fps = 1. / (current_time - self.last_time)
-        self._screen_print('FPS:', [330, y_position])
-        self._screen_print(fps, [530, y_position])
+        self.last_time = current_time
+        self._screen_print('FPS:', [self.INFO_KET_LEFT, y_position])
+        self._screen_print(fps, [self.INFO_VALUE_LEFT, y_position])
 
-        y_position += 30
+        y_position += self.FRONT_SIZE
         for head in info.keys():
-            self._screen_print(head + ':', [330, y_position])
-            y_position += 30
+            self._screen_print(head + ':', [self.INFO_KET_LEFT, y_position])
+            y_position += self.FRONT_SIZE
 
         y_position = 10
-        y_position += 30
+        y_position += self.FRONT_SIZE
         for data in info.values():
-            self._screen_print(data, [530, y_position])
-            y_position += 30
+            self._screen_print(data, [self.INFO_VALUE_LEFT, y_position])
+            y_position += self.FRONT_SIZE
 
         pygame.display.flip()
 
@@ -55,7 +58,7 @@ class Dashboard(object):
 
     def _screen_print(self, string, position):
         if isinstance(string, float):
-            text_bit_map = self._font.render(str(string)[:6], True, self._BLACK)
+            text_bit_map = self.font.render(str(string)[:6], True, self.BLACK)
         else:
-            text_bit_map = self._font.render(str(string), True, self._BLACK)
-        self._screen.blit(text_bit_map, position)
+            text_bit_map = self.font.render(str(string), True, self.BLACK)
+        self.screen.blit(text_bit_map, position)
