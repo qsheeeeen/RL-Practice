@@ -13,7 +13,7 @@ def main():
     print('Done.')
 
     inputs = (96, 96, 3)
-    outputs = (2,)
+    outputs = (3,)
 
     print('Init agent...', end='\t')
     agent = JoystickAgent(inputs, outputs)
@@ -32,6 +32,8 @@ def main():
             print('/\t Wait for ob, r, d, info.', end='\r')
             data = server.receive_data()
             ob, r, d, info = data
+
+            info = {'action':action}
 
             dashboard.update(ob, info)
 

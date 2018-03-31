@@ -26,13 +26,15 @@ class Dashboard(object):
         self._screen.fill(self._WHITE)
 
         image_surface = pygame.surfarray.make_surface(image)
+        image_surface = pygame.transform.rotate(image_surface, -90)
+        image_surface = pygame.transform.flip(image_surface, True, False)
+        image_surface = pygame.transform.scale(image_surface, (240, 240))
         self._screen.blit(image_surface, (10, 10))
 
         current_time = time.time()
         fps = 1. / (current_time - self.last_time)
         self._screen_print('FPS:', [330, y_position])
         self._screen_print(fps, [530, y_position])
-        self.last_time = current_time
 
         y_position += 30
         for head in info.keys():
