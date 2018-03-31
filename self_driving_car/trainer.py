@@ -11,28 +11,28 @@ from visualdl import LogWriter
 
 class Trainer(object):
     def __init__(self, model, input_shape, output_shape, data_path='./data.hdf5', lr=3e-4):
-        self._model = model(input_shape, output_shape)
+        self.model = model(input_shape, output_shape)
 
-        self._model_optimizer = Adam(self._model.parameters(), lr=lr)
-        self._model_criterion = SmoothL1Loss().cuda()
+        self.model_optimizer = Adam(self.model.parameters(), lr=lr)
+        self.model_criterion = SmoothL1Loss().cuda()
 
-        self._file = h5py.File(data_path, 'r')
+        self.file = h5py.File(data_path, 'r')
 
-        self._state_dataset = self._file['state']
-        self._action_dataset = self._file['action']
-        self._reward_dataset = self._file['reward']
+        self.state_dataset = self.file['state']
+        self.action_dataset = self.file['action']
+        self.reward_dataset = self.file['reward']
 
-        self._logger = LogWriter('./logdir', sync_cycle=100)
+        self.logger = LogWriter('./logdir', sync_cycle=100)
 
-        with self._logger.mode('train'):
-            self._train_loss = self._logger.scalar('loss/')
+        with self.logger.mode('train'):
+            self.train_loss = self.logger.scalar('loss/')
 
-        with self._logger.mode('test'):
-            self._test_loss = self._logger.scalar('loss/')
+        with self.logger.mode('test'):
+            self.test_loss = self.logger.scalar('loss/')
 
     def fit(self, batch_size=32, epochs=100):
-        states_array = np.array(self._state_dataset)
-        actions_array = np.array(self._action_dataset)
+        states_array = np.array(self.state_dataset)
+        actions_array = np.array(self.action_dataset)
 
         (states_array_train,
          states_array_test,
@@ -61,30 +61,30 @@ class Trainer(object):
                 states_var = Variable(states)
                 actions_var = Variable(actions)
 
-                means_var, stds_var, values_var = self._model(states_var)
+                means_var, stds_var, values_var = self.model(states_var)
 
-                total_loss = self._model_criterion(means_var, actions_var)
+                total_loss = self.model_criterion(means_var, actions_var)
 
-                self._model_optimizer.zero_grad()
+                self.model_optimizer.zero_grad()
                 total_loss.backward()
-                self._model_optimizer.step()
+                self.model_optimizer.step()
 
-                self._train_loss.add_record(training_step, float(total_loss))
+                self.train_loss.add_record(training_step, float(total_loss))
                 training_step += 1
 
             for states, actions in testing_data_loader:
                 states_var = Variable(states)
                 actions_var = Variable(actions)
 
-                means_var, stds_var, values_var = self._model(states_var)
+                means_var, stds_var, values_var = self.model(states_var)
 
-                total_loss = self._model_criterion(means_var, actions_var)
+                total_loss = self.model_criterion(means_var, actions_var)
 
-                self._test_loss.add_record(testing_step, float(total_loss))
+                self.test_loss.add_record(testing_step, float(total_loss))
                 testing_step += 1
 
     def save(self, weight_path='./ppo_weights.pth'):
-        torch.save(self._model.state_dict(), weight_path)
+        torch.save(self.model.state_dict(), weight_path)
 
     @staticmethod
     def _processing_state(x):

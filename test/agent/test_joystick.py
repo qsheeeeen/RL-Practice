@@ -16,7 +16,7 @@ def main():
     for i in range(20):
         ob = env.reset()
         env.render()
-        for _ in range(1000):
+        while True:
             a = agent.act(ob)
             ob, r, d, info = env.step(a)
             env.render()

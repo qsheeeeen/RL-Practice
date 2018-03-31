@@ -5,6 +5,8 @@ from self_driving_car.agent import PPOAgent
 from self_driving_car.policy.shared import CNNPolicy
 
 
+# nvprof --profile-from-start off -o trace_name.prof -- python3 gpu_profile.py
+
 def main():
     env = gym.make('CarRacing-v0')
 
@@ -17,7 +19,7 @@ def main():
     ob = env.reset()
     env.render()
     action = agent.act(ob)
-    for i in range(127):
+    for i in range(255):
         ob, r, d, _ = env.step(action)
         env.render()
         action = agent.act(ob, r, d)
@@ -25,14 +27,13 @@ def main():
             break
 
     with torch.cuda.profiler.profile():
-        agent.act(ob)
         with torch.autograd.profiler.emit_nvtx():
             agent.act(ob)
 
     env.close()
 
-    prof = torch.autograd.profiler.load_nvprof('trace_name.prof')
-    print(prof)
+    # prof = torch.autograd.profiler.load_nvprof('trace_name.prof')
+    # print(prof)
 
 
 if __name__ == '__main__':
