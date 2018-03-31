@@ -66,6 +66,7 @@ class CNNPolicy(nn.Module):
             layer.bias.data.fill_(0.)
 
 
+# TODO: why extremely slow...
 class LSTMPolicy(nn.Module):
     def __init__(self, input_shape, output_shape):
         super(LSTMPolicy, self).__init__()

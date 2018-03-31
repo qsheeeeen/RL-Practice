@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import gym
 import torch
 
@@ -5,7 +7,7 @@ from self_driving_car.agent import PPOAgent
 from self_driving_car.policy.shared import CNNPolicy
 
 
-# nvprof --profile-from-start off -o trace_name.prof -- python3 gpu_profile.py
+# nvprof -f --profile-from-start off -o trace_name.nvvp -- python3 gpu_profile.py
 
 def main():
     env = gym.make('CarRacing-v0')
@@ -19,16 +21,14 @@ def main():
     ob = env.reset()
     env.render()
     action = agent.act(ob)
-    for i in range(255):
+    for i in range(128):
         ob, r, d, _ = env.step(action)
         env.render()
-        action = agent.act(ob, r, d)
+        with torch.cuda.profiler.profile():
+            with torch.autograd.profiler.emit_nvtx():
+                action = agent.act(ob, r, d)
         if d:
             break
-
-    with torch.cuda.profiler.profile():
-        with torch.autograd.profiler.emit_nvtx():
-            agent.act(ob)
 
     env.close()
 

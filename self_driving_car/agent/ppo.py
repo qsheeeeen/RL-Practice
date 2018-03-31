@@ -77,17 +77,19 @@ class PPOAgent(object):
 
         torch.backends.cudnn.benchmark = True
 
-    def act(self, state, reward_t=0., done=False):
+    def act(self, state, reward=0., done=False):
         state_t = self._processing(state)
 
-        mean_v, std_v, value_v = self.policy_old(Variable(state_t, volatile=True))
+        mean_v, std_v, value_v = self.policy_old(Variable(state_t.cuda(), volatile=True))
 
         if self.train:
-            m = Normal(mean_v, std_v)
-            action_v = m.sample()
+            m_v = Normal(mean_v, std_v)
+            action_v = m_v.sample()
 
-            value_t = value_v.data
-            reward_t = torch.zeros_like(value_t) + reward_t
+            action_t = action_v.data.cpu()
+
+            value_t = value_v.data.cpu()
+            reward_t = torch.zeros_like(value_t) + reward
 
             if self.stored is not None:
                 self.replay_buffer.store(self.stored + [reward_t])
@@ -96,12 +98,12 @@ class PPOAgent(object):
                 self._update_policy()
                 self.replay_buffer.clear()
 
-            self.stored = [state_t, value_t, action_v.data, m.log_prob(action_v).data]
+            self.stored = [state_t, value_t, action_t, m_v.log_prob(action_v).data.cpu()]
 
         else:
-            action_v = mean_v
+            action_t = mean_v.data.cpu()
 
-        return torch.clamp(action_v.data.cpu(), -self.output_limit, self.output_limit).numpy()[0]
+        return torch.clamp(action_t, -self.output_limit, self.output_limit).numpy()[0]
 
     def save(self):
         torch.save(self.policy_old.state_dict(), self.weight_path)
@@ -114,7 +116,7 @@ class PPOAgent(object):
         else:
             raise NotImplementedError
 
-        return tensor.unsqueeze(0).cuda()
+        return tensor.unsqueeze(0)
 
     def _calculate_advantage(self, rewards_t, values):
         advantages_t = torch.zeros_like(rewards_t)
@@ -149,16 +151,16 @@ class PPOAgent(object):
                                                          data_loader_3):
                 advantages_t = (advantages_t - advantages_t.mean()) / (advantages_t.std() + 1e-8)
 
-                states_v = Variable(states_t)
-                actions_old_v = Variable(actions_old_t)
-                advantages_v = Variable(advantages_t)
-                values_target_v = Variable(values_target_t)
-                log_probs_old_v = Variable(log_probs_old_t)
-                values_old_v = Variable(values_old_t)
+                states_v = Variable(states_t.cuda())
+                actions_old_v = Variable(actions_old_t.cuda())
+                advantages_v = Variable(advantages_t.cuda())
+                values_target_v = Variable(values_target_t.cuda())
+                log_probs_old_v = Variable(log_probs_old_t.cuda())
+                values_old_v = Variable(values_old_t.cuda())
 
                 means_v, stds_v, values_v = self.policy(states_v)
-                m = Normal(means_v, stds_v)
-                log_probs_v = m.log_prob(actions_old_v)
+                m_v = Normal(means_v, stds_v)
+                log_probs_v = m_v.log_prob(actions_old_v)
 
                 ratio = torch.exp(log_probs_v - log_probs_old_v)
 
