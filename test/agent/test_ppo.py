@@ -14,7 +14,7 @@ def main():
     outputs = env.action_space.shape
 
     agent = PPOAgent(CNNPolicy, inputs, outputs, horizon=128, lr=2.5e-4, num_epoch=4, batch_size=4, clip_range=0.1)
-    # agent = PPOAgent(MLPPolicy, inputs, outputs, horizon=2048, lr=3e-4, num_epoch=10, batch_size=32, clip_range=0.2)
+    # agent = PPOAgent(MLPPolicy, inputs, outputs)
 
     reward_history = []
     for i in range(1000):

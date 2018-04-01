@@ -7,7 +7,8 @@ from torch.nn import SmoothL1Loss
 from torch.nn.utils import clip_grad_norm
 from torch.optim import Adam
 from torch.utils.data import TensorDataset, DataLoader
-from torchvision.transforms import Compose, CenterCrop, ToPILImage, ToTensor
+from torchvision.transforms import Compose, CenterCrop, ToPILImage, ToTensor, Normalize
+from torchvision.models import Inception3
 
 from .replay_buffer import ReplayBuffer
 
@@ -21,8 +22,8 @@ class PPOAgent(object):
             output_limit=1,
             horizon=2048,
             lr=3e-4,
-            num_epoch=100,
-            batch_size=64,
+            num_epoch=10,
+            batch_size=32,
             clip_range=0.2,
             vf_coeff=0.5,
             discount_factor=0.99,
@@ -55,6 +56,7 @@ class PPOAgent(object):
             ToPILImage(),
             CenterCrop(72),
             ToTensor(),
+            Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ])
 
         self.policy_old = policy(self.input_shape, self.output_shape)
