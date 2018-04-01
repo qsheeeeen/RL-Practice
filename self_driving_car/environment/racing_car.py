@@ -110,14 +110,20 @@ class RacingCar(object):
         self.cam.capture(self.image, 'rgb', use_video_port=True)
 
     def _interrupt_handle(self, gpio, level, tick):
+        print('Interrupt trigered.')
+        print('gpio: {}\t level: {}'.format(gpio, level))
+
         if (gpio == self.LEFT_LINE_SENSOR_PIN) or (gpio == self.RIGHT_LINE_SENSOR_PIN):
+            print('Done trigered.')
             self.done = True
 
         elif gpio == self.ENCODER_PUL_PIN:
             if level == pigpio.RISING_EDGE:
+                print('pulse count +1.')
                 self.encoder_pulse_count += 1
 
             elif level == pigpio.TIMEOUT:
+                print('Calculate speed.')
                 s = self.encoder_pulse_count / self.ENCODER_LINE * np.pi * self.TIRE_DIAMETER
                 t = self.SPEED_UPDATE_INTERVAL / 1000
                 self.speed = s / t * self.GEAR_RATIO
@@ -128,9 +134,11 @@ class RacingCar(object):
 
         elif gpio == self.ENCODER_ZERO_PIN:
             if level == pigpio.RISING_EDGE:
-                self.total_reward += 5
+                print('total_reward += 5.')
+                self.total_reward += 500
 
             elif level == pigpio.TIMEOUT:
+                print('total_reward -= 1.')
                 self.total_reward -= 1
 
             else:

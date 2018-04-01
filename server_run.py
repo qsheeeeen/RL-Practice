@@ -36,7 +36,8 @@ def main(virtual=False):
             data = server.receive_data()
             ob, r, d, info = data
 
-            info = {'action': action}
+            if virtual:
+                info = {'action': action}
 
             dashboard.update(ob, info)
 

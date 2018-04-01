@@ -1,5 +1,7 @@
 import time
+from collections import deque
 
+import numpy as np
 import pygame
 
 
@@ -21,10 +23,11 @@ class Dashboard(object):
         self.screen.fill(self.WHITE)
         self.font = pygame.font.Font(None, self.FRONT_SIZE)
 
+        self.buffer = deque(maxlen=100)
+
         self.last_time = time.time()
 
     def update(self, image, info=None):
-        y_position = 10
         self.screen.fill(self.WHITE)
 
         image_surface = pygame.surfarray.make_surface(image)
@@ -36,15 +39,26 @@ class Dashboard(object):
         current_time = time.time()
         fps = 1. / (current_time - self.last_time)
         self.last_time = current_time
-        self._screen_print('FPS:', [self.INFO_KET_LEFT, y_position])
+
+        self.buffer.append(fps)
+        average_fps = np.mean(self.buffer)
+
+        y_position = 10
+        self._screen_print('fps:', [self.INFO_KET_LEFT, y_position])
         self._screen_print(fps, [self.INFO_VALUE_LEFT, y_position])
 
         y_position += self.FRONT_SIZE
+        self._screen_print('average fps:', [self.INFO_KET_LEFT, y_position])
+        self._screen_print(average_fps, [self.INFO_VALUE_LEFT, y_position])
+
+        y_position += self.FRONT_SIZE
         for head in info.keys():
+            if isinstance(head, bytes):
+                head = head.decode()
             self._screen_print(head + ':', [self.INFO_KET_LEFT, y_position])
             y_position += self.FRONT_SIZE
 
-        y_position = 10
+        y_position = 10 + self.FRONT_SIZE
         y_position += self.FRONT_SIZE
         for data in info.values():
             self._screen_print(data, [self.INFO_VALUE_LEFT, y_position])

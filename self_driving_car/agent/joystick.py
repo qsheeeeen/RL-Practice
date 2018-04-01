@@ -67,7 +67,7 @@ class JoystickAgent(object):
         gas_signal = (gas_signal + 1) / 2
 
         break_signal = self.joystick.get_axis(self.BREAK_AXIS)
-        break_signal = (break_signal + 1) / 2
+        break_signal = -(break_signal + 1) / 2
 
         if self.output_shape[0] == 3:
             action_array = np.array((steering, gas_signal, break_signal), dtype=np.float32)
