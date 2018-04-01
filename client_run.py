@@ -1,9 +1,9 @@
 from self_driving_car.tool import Com
 
 
-def main(virtual=True):
+def main(virtual=False):
     print('Init com...', end='\t')
-    client = Com('client', '127.0.0.1')
+    client = Com('client', '192.168.1.103')
     print('Done.')
 
     print('Init env...', end='\t')
