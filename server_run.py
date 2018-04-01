@@ -3,7 +3,7 @@ from self_driving_car.tool import Com
 from self_driving_car.tool.dashboard import Dashboard
 
 
-def main():
+def main(virtual=False):
     print('Init dashboard', end='\t')
     dashboard = Dashboard()
     print('Done.')
@@ -13,7 +13,10 @@ def main():
     print('Done.')
 
     inputs = (96, 96, 3)
-    outputs = (3,)
+    if virtual:
+        outputs = (3,)
+    else:
+        outputs = (2,)
 
     print('Init agent...', end='\t')
     agent = JoystickAgent(inputs, outputs)

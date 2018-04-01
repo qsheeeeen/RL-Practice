@@ -150,8 +150,8 @@ class RacingCar(object):
         self.pi.set_servo_pulsewidth(self.MOTOR_PIN, pwm_wave)
 
     def _generate_info(self, steering_signal, motor_signal):
-        return {'steering_signal': steering_signal,
-                'motor_signal': motor_signal,
-                'total_reward': self.total_reward,
-                'speed': self.speed,
-                'done': self.done}
+        return {'steering_signal': float(steering_signal),
+                'motor_signal': float(motor_signal),
+                'total_reward': float(self.total_reward),
+                'speed': float(self.speed),
+                'done': float(self.done)}
