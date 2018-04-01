@@ -33,7 +33,7 @@ def main():
             data = server.receive_data()
             ob, r, d, info = data
 
-            info = {'action':action}
+            info = {'action': action}
 
             dashboard.update(ob, info)
 

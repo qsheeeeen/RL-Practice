@@ -23,19 +23,19 @@ class JoystickAgent(object):
         self.file = h5py.File(data_path, 'w')
 
         self.state_dataset = self.file.create_dataset('states',
-                                                        (num_sample,) + input_shape,
-                                                        np.float32,
-                                                        chunks=(1,) + input_shape)
+                                                      (num_sample,) + input_shape,
+                                                      np.float32,
+                                                      chunks=(1,) + input_shape)
 
         self.action_dataset = self.file.create_dataset('actions',
-                                                         (num_sample,) + output_shape,
-                                                         np.float32,
-                                                         chunks=(1,) + output_shape)
+                                                       (num_sample,) + output_shape,
+                                                       np.float32,
+                                                       chunks=(1,) + output_shape)
 
         self.reward_dataset = self.file.create_dataset('rewards',
-                                                         (num_sample, 1),
-                                                         np.float32,
-                                                         chunks=(1, 1))
+                                                       (num_sample, 1),
+                                                       np.float32,
+                                                       chunks=(1, 1))
         self.num_sample = num_sample
 
         self.count = 0

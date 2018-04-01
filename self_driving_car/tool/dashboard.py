@@ -7,10 +7,10 @@ class Dashboard(object):
     def __init__(self, width=600, high=260):
         self.BLACK = (0, 0, 0)
         self.WHITE = (255, 255, 255)
-        
+
         self.INFO_KET_LEFT = 260
         self.INFO_VALUE_LEFT = 450
-        
+
         self.FRONT_SIZE = 30
 
         pygame.init()
