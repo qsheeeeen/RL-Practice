@@ -7,4 +7,6 @@ pigpio
 picamera
 pygame
 pyzmq
+torch
+torchvision
 visualdl

@@ -5,7 +5,7 @@ from torch.autograd import Variable
 from torch.distributions import Normal
 from torch.nn import SmoothL1Loss
 from torch.nn.utils import clip_grad_norm
-from torch.optim import Adam
+from torch.optim import Adam,Adadelta
 from torch.utils.data import DataLoader
 
 from .util import ReplayBuffer, TensorDataset, processing_image
@@ -23,7 +23,7 @@ class PPOAgent(object):
             num_epoch=10,
             batch_size=32,
             clip_range=0.2,
-            vf_coeff=0.5,
+            vf_coeff=1,
             discount_factor=0.99,
             gae_parameter=0.95,
             max_grad_norm=0.5,

@@ -14,7 +14,7 @@ class CNNBase(nn.Module):
         self.conv1 = nn.Conv2d(3, 16, kernel_size=8, stride=4)
         self.conv2 = nn.Conv2d(16, 32, kernel_size=4, stride=2)
 
-        self.fc = nn.Linear(1568, 128)
+        self.fc = nn.Linear(3200, 128)
 
     def forward(self, x):
         x = self.conv1(x)
@@ -42,7 +42,7 @@ class CNNPolicy(nn.Module):
         self.std = nn.Parameter(torch.zeros(output_shape[0]))
         self.value_fc = nn.Linear(128, 1)
 
-        self.apply(self.init_weights)
+        # self.apply(self.init_weights)
 
         self.float()
         self.cuda()
