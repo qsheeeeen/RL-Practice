@@ -150,7 +150,7 @@ class PPOAgent(object):
 
                 vf_losses1 = torch.pow((values_v - values_target_v), 2)
                 vf_losses2 = torch.pow((values_clipped - values_target_v), 2)
-                vf_loss = .5 * torch.mean(torch.max(vf_losses1, vf_losses2))
+                vf_loss = torch.mean(torch.max(vf_losses1, vf_losses2))
 
                 total_loss = pg_loss + self.vf_coeff * vf_loss
 
