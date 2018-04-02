@@ -6,11 +6,9 @@ from torch.distributions import Normal
 from torch.nn import SmoothL1Loss
 from torch.nn.utils import clip_grad_norm
 from torch.optim import Adam
-from torch.utils.data import TensorDataset, DataLoader
-from torchvision.transforms import Compose, CenterCrop, ToPILImage, ToTensor, Normalize
-from torchvision.models import Inception3
+from torch.utils.data import DataLoader
 
-from .replay_buffer import ReplayBuffer
+from .util import ReplayBuffer, TensorDataset, processing_image
 
 
 class PPOAgent(object):
@@ -52,13 +50,6 @@ class PPOAgent(object):
         self.save_weight = save_weight
         self.weight_path = weight_path
 
-        self.transform = Compose([
-            ToPILImage(),
-            CenterCrop(72),
-            ToTensor(),
-            Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-        ])
-
         self.policy_old = policy(self.input_shape, self.output_shape)
         self.policy_old.eval()
 
@@ -80,7 +71,7 @@ class PPOAgent(object):
         torch.backends.cudnn.benchmark = True
 
     def act(self, state, reward=0., done=False):
-        state_t = self._processing(state)
+        state_t = processing_image(state)
 
         mean_v, std_v, value_v = self.policy_old(Variable(state_t.cuda(), volatile=True))
 
@@ -110,15 +101,8 @@ class PPOAgent(object):
     def save(self):
         torch.save(self.policy_old.state_dict(), self.weight_path)
 
-    def _processing(self, array):
-        if len(array.shape) == 3:
-            tensor = self.transform(array).float()
-        elif len(array.shape) == 1:
-            tensor = torch.from_numpy(array).float()
-        else:
-            raise NotImplementedError
-
-        return tensor.unsqueeze(0)
+    def close(self):
+        pass
 
     def _calculate_advantage(self, rewards_t, values):
         advantages_t = torch.zeros_like(rewards_t)
@@ -137,20 +121,12 @@ class PPOAgent(object):
 
         values_target_t = advantages_t + values_old_t
 
-        dataset_1 = TensorDataset(states_t, actions_old_t)
-        dataset_2 = TensorDataset(advantages_t, values_target_t)
-        dataset_3 = TensorDataset(log_probs_old_t, values_old_t)
+        dataset = TensorDataset(states_t, actions_old_t, advantages_t, values_target_t, log_probs_old_t, values_old_t)
 
-        data_loader_1 = DataLoader(dataset_1, self.batch_size)
-        data_loader_2 = DataLoader(dataset_2, self.batch_size)
-        data_loader_3 = DataLoader(dataset_3, self.batch_size)
+        data_loader = DataLoader(dataset, self.batch_size)
 
         for _ in range(self.num_epoch):
-            for ((states_t, actions_old_t),
-                 (advantages_t, values_target_t),
-                 (log_probs_old_t, values_old_t)) in zip(data_loader_1,
-                                                         data_loader_2,
-                                                         data_loader_3):
+            for states_t, actions_old_t, advantages_t, values_target_t, log_probs_old_t, values_old_t in data_loader:
                 advantages_t = (advantages_t - advantages_t.mean()) / (advantages_t.std() + 1e-8)
 
                 states_v = Variable(states_t.cuda())

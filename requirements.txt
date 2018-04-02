@@ -7,5 +7,4 @@ pigpio
 picamera
 pygame
 pyzmq
-scikit-learn
 visualdl

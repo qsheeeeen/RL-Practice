@@ -8,7 +8,7 @@ class JoystickAgent(object):
         self.STEERING_AXIS = 0
         self.BREAK_AXIS = 2
         self.GAS_AXIS = 5
-        self.DONE_BUTTON = 3
+        self.START_BUTTON = 8
 
         self.output_shape = output_shape
 
@@ -56,6 +56,11 @@ class JoystickAgent(object):
             print(sign, end='\r')
             if sign > 0.9:
                 print('OK. Now Release.')
+                break
+        while True:
+            pygame.event.get()
+            if self.joystick.get_button(self.START_BUTTON) == 1:
+                print('Start.')
                 break
 
     def act(self, state, reward=0, done=False):

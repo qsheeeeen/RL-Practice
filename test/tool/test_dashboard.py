@@ -1,6 +1,5 @@
-import random
-
 import numpy as np
+import random
 
 from self_driving_car.tool.dashboard import Dashboard
 
@@ -12,7 +11,7 @@ def main():
     while not done:
         img = np.random.randint(0, 255, (240, 240, 3), np.uint8)
 
-        name = ('Motor signal', 'Steering signal', 'Car speed')
+        name = ('motor signal', 'steering signal', 'car speed')
         num = (random.random(), random.random(), random.random())
         info = dict(zip(name, num))
 

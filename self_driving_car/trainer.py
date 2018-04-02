@@ -1,11 +1,11 @@
 import h5py
 import numpy as np
 import torch
-from sklearn.model_selection import train_test_split
 from torch.autograd import Variable
 from torch.nn import SmoothL1Loss
 from torch.optim import Adam
 from torch.utils.data import TensorDataset, DataLoader
+from torch.utils.data.dataset import random_split
 from visualdl import LogWriter
 
 
@@ -34,10 +34,14 @@ class Trainer(object):
         states_array = np.array(self.state_dataset)
         actions_array = np.array(self.action_dataset)
 
+        states_t = self._processing_state(states_array_train)
+        actions_t = actions_t = torch.from_numpy(actions_array_train).cuda()
+
+        # TODO
         (states_array_train,
          states_array_test,
          actions_array_train,
-         actions_array_test) = train_test_split(states_array, actions_array)
+         actions_array_test) = random_split(states_array, actions_array)
 
         del states_array, actions_array
 
