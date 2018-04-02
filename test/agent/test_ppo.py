@@ -19,22 +19,22 @@ def main():
 
     torch.manual_seed(SEED)
 
-    # agent = PPOAgent(CNNPolicy, inputs, outputs, horizon=2048, lr=2.5e-4, num_epoch=10, batch_size=64, clip_range=0.2)
-    agent = PPOAgent(CNNPolicy, inputs, outputs)
+    agent = PPOAgent(CNNPolicy, inputs, outputs, horizon=128, lr=2.5e-4, num_epoch=4, batch_size=4, clip_range=0.2)
+    # agent = PPOAgent(CNNPolicy, inputs, outputs)
     # agent = PPOAgent(MLPPolicy, inputs, outputs)
 
     reward_history = []
     for i in range(1000):
         ob = env.reset()
 
-        ob = np.zeros_like(ob) + ob
+        ob = np.copy(ob)
 
         env.render()
         action = agent.act(ob)
         total_reword = 0
         while True:
             ob, r, d, _ = env.step(action)
-            ob = np.zeros_like(ob) + ob
+            ob = np.copy(ob)
             total_reword += r
             env.render()
             action = agent.act(ob, r, d)

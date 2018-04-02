@@ -4,6 +4,7 @@ A self-driving model car running reinforcement learning algorithms implemented i
 ## 1. Result
 
 ### 1.1 gym environment:
+<img src="image/result1.png" align="middle" width="3000"/>
 
 ### 1.2 Real track:
 
@@ -13,22 +14,20 @@ A self-driving model car running reinforcement learning algorithms implemented i
 pic
 
 ### 2.2. Software:
-Install dependencies according to [rpi_requirements](rpi_requirements) and [requirements](requirements).
+Install dependencies according to [rpi_requirements.txt](rpi_requirements.txt) and [requirements.txt](requirements.txt).
 
 ## 3. Run
 On Pi:
-    
-    python3 client_run.py
-    
+
+    python3 client_run.py    
 ### 3.1 For fun or gathering data.
 On PC:
     
-    python3 server_run.py --joystick
-
+    python3 server_run.py -A joystick
 ### 3.2 Train in real world.
 On PC:
 
-    python3 server_run.py --ppo
+    python3 server_run.py -A ppo
 ## 4. TODO
 [Noisy Networks for Exploration](https://arxiv.org/abs/1706.10295)
 
