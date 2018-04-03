@@ -5,7 +5,6 @@ import torch
 
 from self_driving_car.agent import PPOAgent
 from self_driving_car.policy import CNNPolicy
-
 # from self_driving_car.policy.shared import MLPPolicy
 
 SEED = 123

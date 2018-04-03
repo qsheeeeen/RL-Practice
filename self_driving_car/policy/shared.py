@@ -11,18 +11,20 @@ class CNNBase(nn.Module):
 
         super(CNNBase, self).__init__()
 
-        self.conv1 = nn.Conv2d(3, 16, kernel_size=8, stride=4)
-        self.conv2 = nn.Conv2d(16, 32, kernel_size=4, stride=2)
+        self.conv1 = nn.Conv2d(3, 32, kernel_size=8, stride=4)
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=4, stride=2)
+        self.conv3 = nn.Conv2d(64, 64, kernel_size=3, stride=1)
 
-        self.fc = nn.Linear(3200, 256)
+        self.fc = nn.Linear(4096, 512)
 
     def forward(self, x):
         h1 = F.relu(self.conv1(x))
         h2 = F.relu(self.conv2(h1))
+        h3 = F.relu(self.conv3(h2))
 
-        h2 = h2.view(h2.size(0), -1)
+        h3 = h3.view(h3.size(0), -1)
 
-        return F.relu(self.fc(h2))
+        return F.relu(self.fc(h3))
 
 
 class CNNPolicy(nn.Module):
@@ -31,11 +33,11 @@ class CNNPolicy(nn.Module):
 
         self.base_model = CNNBase(input_shape, output_shape)
 
-        feature = self.base_model.fc.out_features
+        size = self.base_model.fc.out_features
 
-        self.mean_fc = nn.Linear(feature, output_shape[0])
+        self.mean_fc = nn.Linear(size, output_shape[0])
         self.std = nn.Parameter(torch.zeros(output_shape[0]))
-        self.value_fc = nn.Linear(feature, 1)
+        self.value_fc = nn.Linear(size, 1)
 
         # Tested work if not apply
         # self.apply(self.init_weights)
@@ -44,10 +46,10 @@ class CNNPolicy(nn.Module):
         self.cuda()
 
     def forward(self, x):
-        feature = self.base_model(x)
+        size = self.base_model(x)
 
-        mean = self.mean_fc(feature)
-        value = self.value_fc(feature)
+        mean = self.mean_fc(size)
+        value = self.value_fc(size)
 
         log_std = self.std.expand_as(mean)
         std = torch.exp(log_std)
@@ -63,52 +65,44 @@ class CNNPolicy(nn.Module):
 
 # TODO: why extremely slow...
 class LSTMPolicy(nn.Module):
-    def __init__(self, input_shape, output_shape):
+    def __init__(self, input_shape, output_shape, batch_size):
         super(LSTMPolicy, self).__init__()
 
         self.base_model = CNNBase(input_shape, output_shape)
 
-        feature = self.base_model.fc.out_features
+        self.size = self.base_model.fc.out_features
 
-        self.rnn = nn.LSTMCell(feature, feature)
-        self.rnn = nn.LSTM()
+        # self.rnn = nn.LSTMCell(size, size)
+        self.rnn = nn.LSTM(self.size, self.size)
 
-        self.mean_fc = nn.Linear(feature, output_shape[0])
+        self.mean_fc = nn.Linear(self.size, output_shape[0])
         self.std = nn.Parameter(torch.ones(output_shape[0]))
-        self.value_fc = nn.Linear(feature, 1)
+        self.value_fc = nn.Linear(self.size, 1)
 
         self.apply(self.base_model.init_weights)
 
-        self.hidden = self.init_hidden()
+        self.batch_size = batch_size
+
+        self.hidden = None
 
         self.float()
         self.cuda()
 
     def forward(self, x):
-        x = self.base_model(x)
+        feature = self.base_model(x)
 
         if self.hidden is None:
-            self.hidden = self.init_hidden(x)
+            out, self.hidden = self.rnn(feature)
+        else:
+            out, self.hidden = self.rnn(feature, self.hidden)
 
-        self.hidden = self.rnn(x, self.hidden)
-
-        self.hidden[0].detach_()
-        self.hidden[1].detach_()
-
-        x = self.hidden[0]
-
-        mean = self.mean_fc(x)
+        mean = self.mean_fc(out)
+        value = self.value_fc(out)
 
         log_std = self.std.expand_as(mean)
         std = torch.exp(log_std)
 
-        value = self.value_fc(x)
-
         return mean, std, value
-
-    @staticmethod
-    def init_hidden(x):
-        return torch.zeros_like(x), torch.zeros_like(x)
 
 
 class MLPPolicy(nn.Module):
