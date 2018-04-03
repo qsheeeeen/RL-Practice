@@ -2,11 +2,10 @@ from collections import deque
 
 import torch
 from torch.utils.data import Dataset
-from torchvision.transforms import Compose, CenterCrop, ToPILImage, ToTensor, Normalize
+from torchvision.transforms import Compose, ToTensor
 
 transform = Compose([
-    ToTensor(),
-    Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ToTensor()
 ])
 
 

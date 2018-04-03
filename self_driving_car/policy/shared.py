@@ -14,21 +14,15 @@ class CNNBase(nn.Module):
         self.conv1 = nn.Conv2d(3, 16, kernel_size=8, stride=4)
         self.conv2 = nn.Conv2d(16, 32, kernel_size=4, stride=2)
 
-        self.fc = nn.Linear(3200, 128)
+        self.fc = nn.Linear(3200, 256)
 
     def forward(self, x):
-        x = self.conv1(x)
-        x = F.relu(x)
+        h1 = F.relu(self.conv1(x))
+        h2 = F.relu(self.conv2(h1))
 
-        x = self.conv2(x)
-        x = F.relu(x)
+        h2 = h2.view(h2.size(0), -1)
 
-        x = x.view(x.size(0), -1)
-
-        x = self.fc(x)
-        x = F.relu(x)
-
-        return x
+        return F.relu(self.fc(h2))
 
 
 # TODO: why not converge...
@@ -38,9 +32,11 @@ class CNNPolicy(nn.Module):
 
         self.base_model = CNNBase(input_shape, output_shape)
 
-        self.mean_fc = nn.Linear(128, output_shape[0])
+        feature = self.base_model.fc.out_features
+
+        self.mean_fc = nn.Linear(feature, output_shape[0])
         self.std = nn.Parameter(torch.zeros(output_shape[0]))
-        self.value_fc = nn.Linear(128, 1)
+        self.value_fc = nn.Linear(feature, 1)
 
         # self.apply(self.init_weights)
 
@@ -48,14 +44,13 @@ class CNNPolicy(nn.Module):
         self.cuda()
 
     def forward(self, x):
-        x = self.base_model(x)
+        feature = self.base_model(x)
 
-        mean = self.mean_fc(x)
+        mean = self.mean_fc(feature)
+        value = self.value_fc(feature)
 
         log_std = self.std.expand_as(mean)
         std = torch.exp(log_std)
-
-        value = self.value_fc(x)
 
         return mean, std, value
 

@@ -1,21 +1,15 @@
 # Self Driving Car (Unfinished)
 A self-driving model car running reinforcement learning algorithms implemented in PyTorch.
-
 ## 1. Result
-
 ### 1.1 gym environment:
 <img src="image/result1.png" align="middle" width="3000"/>
 
 ### 1.2 Real track:
-
 ## 2. Setup
-
 ### 2.1. Hardware:
-pic
 
 ### 2.2. Software:
 Install dependencies according to [rpi_requirements.txt](rpi_requirements.txt) and [requirements.txt](requirements.txt).
-
 ## 3. Run
 On Pi:
 
@@ -40,8 +34,6 @@ On PC:
 [Proximal Policy Optimization Algorithms](https://arxiv.org/abs/1707.06347)
 
 [openai/baselines](https://github.com/openai/baselines)
-
 ## License
-This project is released under MIT License.
-Please review [License](LICENSE) file for more details.
+This project is released under MIT License. Please review [License](LICENSE) file for more details.
 

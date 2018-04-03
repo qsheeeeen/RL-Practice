@@ -5,7 +5,7 @@ from torch.autograd import Variable
 from torch.distributions import Normal
 from torch.nn import SmoothL1Loss
 from torch.nn.utils import clip_grad_norm
-from torch.optim import Adam,Adadelta
+from torch.optim import Adam
 from torch.utils.data import DataLoader
 
 from .util import ReplayBuffer, TensorDataset, processing_image
@@ -123,7 +123,7 @@ class PPOAgent(object):
 
         dataset = TensorDataset(states_t, actions_old_t, advantages_t, values_target_t, log_probs_old_t, values_old_t)
 
-        data_loader = DataLoader(dataset, self.batch_size)
+        data_loader = DataLoader(dataset, self.batch_size, shuffle=True)
 
         for _ in range(self.num_epoch):
             for states_t, actions_old_t, advantages_t, values_target_t, log_probs_old_t, values_old_t in data_loader:
