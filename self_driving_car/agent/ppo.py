@@ -8,7 +8,7 @@ from torch.nn.utils import clip_grad_norm
 from torch.optim import Adam
 from torch.utils.data import DataLoader
 
-from .util import ReplayBuffer, TensorDataset, processing_image
+from ..util import ReplayBuffer, TensorDataset, processing_image
 
 
 class PPOAgent(object):

@@ -57,6 +57,7 @@ class JoystickAgent(object):
             if sign > 0.9:
                 print('OK. Now Release.')
                 break
+
         while True:
             pygame.event.get()
             if self.joystick.get_button(self.START_BUTTON) == 1:
@@ -95,3 +96,4 @@ class JoystickAgent(object):
     def close(self):
         self.file.close()
         pygame.quit()
+        quit()

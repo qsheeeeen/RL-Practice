@@ -25,7 +25,6 @@ class CNNBase(nn.Module):
         return F.relu(self.fc(h2))
 
 
-# TODO: why not converge...
 class CNNPolicy(nn.Module):
     def __init__(self, input_shape, output_shape):
         super(CNNPolicy, self).__init__()
@@ -38,6 +37,7 @@ class CNNPolicy(nn.Module):
         self.std = nn.Parameter(torch.zeros(output_shape[0]))
         self.value_fc = nn.Linear(feature, 1)
 
+        # Tested work if not apply
         # self.apply(self.init_weights)
 
         self.float()
@@ -68,15 +68,18 @@ class LSTMPolicy(nn.Module):
 
         self.base_model = CNNBase(input_shape, output_shape)
 
-        self.rnn = nn.LSTMCell(128, 128)
+        feature = self.base_model.fc.out_features
 
-        self.hidden = None
+        self.rnn = nn.LSTMCell(feature, feature)
+        self.rnn = nn.LSTM()
 
-        self.mean_fc = nn.Linear(128, output_shape[0])
+        self.mean_fc = nn.Linear(feature, output_shape[0])
         self.std = nn.Parameter(torch.ones(output_shape[0]))
-        self.value_fc = nn.Linear(128, 1)
+        self.value_fc = nn.Linear(feature, 1)
 
         self.apply(self.base_model.init_weights)
+
+        self.hidden = self.init_hidden()
 
         self.float()
         self.cuda()

@@ -1,6 +1,5 @@
-import random
-
 import numpy as np
+import random
 
 from self_driving_car.tool.dashboard import Dashboard
 

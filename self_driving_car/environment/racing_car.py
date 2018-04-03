@@ -4,7 +4,7 @@ import pigpio
 
 
 class RacingCar(object):
-    def __init__(self, time_limit=1000, motor_limitation=0.2):
+    def __init__(self, time_limit=1000, motor_limitation=0.1):
         assert motor_limitation <= 1, '"motor_limitation" should not > 1.'
 
         # Pin configuration.
@@ -56,7 +56,7 @@ class RacingCar(object):
 
         # Camera.
         self.cam = picamera.PiCamera()
-        self.cam.resolution = 96, 96
+        self.cam.resolution = self.image_width, self.image_height
         self.cam.framerate = 30
         self.cam.exposure_mode = 'sports'
         self.cam.image_effect = 'denoise'
