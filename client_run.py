@@ -21,10 +21,10 @@ def main(virtual=False):
             ob = env.reset()
             if virtual:
                 env.render()
+            print('\\ \t Send ob.                ', end='\r')
             client.send_data([ob])
-            print('\\ \t Send ob.', end='\r')
 
-            print('| \t Wait for action.', end='\r')
+            print('| \t Wait for action.         ', end='\r')
             data = client.receive_data()
             action = data[0]
 
@@ -32,12 +32,14 @@ def main(virtual=False):
                 ob, r, d, info = env.step(action)
                 if virtual:
                     env.render()
+                print('/ \t Sent ob, r, d, info.     ', end='\r')
                 client.send_data([ob, r, d, info])
-                print('/ \t Sent ob, r, d, info.', end='\r')
 
-                print('- \t Wait for action.', end='\r')
+                print('- \t Wait for action.         ', end='\r')
                 data = client.receive_data()
                 action = data[0]
+                if d:
+                    break
     finally:
         env.close()
         print('Closed.')

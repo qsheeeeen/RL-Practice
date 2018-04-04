@@ -1,4 +1,4 @@
-from self_driving_car.agent import JoystickAgent
+from self_driving_car.agent import RandomAgent
 from self_driving_car.tool import Com
 from self_driving_car.tool.dashboard import Dashboard
 
@@ -19,21 +19,21 @@ def main(virtual=False):
         outputs = (2,)
 
     print('Init agent...', end='\t')
-    agent = JoystickAgent(inputs, outputs)
+    agent = RandomAgent(inputs, outputs)
     print('Done.')
 
     try:
         for _ in range(2500):
-            print('\\\t Wait for ob.', end='\r')
+            print('\\\t Wait for ob.             ', end='\r')
             data = server.receive_data()
             ob = data[0]
 
             action = agent.act(ob)
+            print('|\t Data sent.                ', end='\r')
             server.send_data([action])
-            print('|\t Data sent.', end='\r')
 
             for _ in range(1000):
-                print('/\t Wait for ob, r, d, info.', end='\r')
+                print('/\t Wait for ob, r, d, info.  ', end='\r')
                 data = server.receive_data()
                 ob, r, d, info = data
 
@@ -44,7 +44,9 @@ def main(virtual=False):
 
                 action = agent.act(ob, r, d)
                 server.send_data([action])
-                print('-\t Data sent.', end='\r')
+                print('-\t Data sent.                ', end='\r')
+                if d:
+                    break
     finally:
         agent.close()
 

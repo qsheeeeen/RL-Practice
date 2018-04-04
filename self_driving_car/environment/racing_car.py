@@ -1,12 +1,13 @@
+import time
+
 import numpy as np
 import picamera
 import pigpio
 
 
 class RacingCar(object):
-    def __init__(self, time_limit=1000, motor_limitation=0.1):
+    def __init__(self, time_limit=1000, motor_limitation=0.1, limit_fps=20):
         assert motor_limitation <= 1, '"motor_limitation" should not > 1.'
-
         # Pin configuration.
         self.STEERING_SERVO_PIN = 23
         self.MOTOR_PIN = 24
@@ -27,6 +28,9 @@ class RacingCar(object):
         # Parameters.
         self.SPEED_UPDATE_INTERVAL = 500
         self.REWARD_UPDATE_INTERVAL = 500
+
+        self.last_run_time = time.time()
+        self.time_interval = 1 / limit_fps
 
         self.time_limit = time_limit
         self.time_count = 0
@@ -77,7 +81,7 @@ class RacingCar(object):
         return self.image
 
     def step(self, action):
-        assert len(action) == 2, 'Incorrect input shape.'
+        assert len(action) == 2, 'Incorrect input length: {}'.format(len(action))
 
         action = np.minimum(np.maximum(action, -1), 1)
 
@@ -87,6 +91,11 @@ class RacingCar(object):
             steering_signal, motor_signal = action
 
         self._update_pwm(steering_signal, motor_signal)
+
+        now = time.time()
+        sleep_time = self.time_interval - (now - self.last_run_time)
+        time.sleep(sleep_time if (sleep_time > 0) else 0)
+        self.last_run_time = now
 
         self._update_image()
 
@@ -108,6 +117,8 @@ class RacingCar(object):
 
     def _update_image(self):
         self.cam.capture(self.image, 'rgb', use_video_port=True)
+
+        # self.image = np.random.randint(0, 256, (self.image_height, self.image_width, 3), dtype=np.uint8)
 
     def _interrupt_handle(self, gpio, level, tick):
         if (gpio == self.LEFT_LINE_SENSOR_PIN) or (gpio == self.RIGHT_LINE_SENSOR_PIN):
@@ -131,7 +142,7 @@ class RacingCar(object):
                 self.total_reward += 50
 
             elif level == pigpio.TIMEOUT:
-                self.total_reward -= 1
+                self.total_reward -= 0.05
 
             else:
                 raise NotImplementedError('Unknown level for encoder pulse pin: {}.'.format(level))

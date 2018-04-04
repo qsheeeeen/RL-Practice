@@ -4,15 +4,15 @@ import numpy as np
 import torch
 
 from self_driving_car.agent import PPOAgent
-from self_driving_car.policy import CNNPolicy
-# from self_driving_car.policy.shared import MLPPolicy
+# from self_driving_car.policy import CNNPolicy
+from self_driving_car.policy.shared import MLPPolicy
 
 SEED = 123
 
 
 def main():
-    env = gym.make('CarRacing-v0')
-    # env = gym.make('LunarLanderContinuous-v2')
+    # env = gym.make('CarRacing-v0')
+    env = gym.make('LunarLanderContinuous-v2')
     env.seed(SEED)
 
     inputs = env.observation_space.shape
@@ -21,8 +21,8 @@ def main():
     torch.manual_seed(SEED)
 
     # agent = PPOAgent(CNNPolicy, inputs, outputs, horizon=128, lr=2.5e-4, num_epoch=4, batch_size=4, clip_range=0.1)
-    agent = PPOAgent(CNNPolicy, inputs, outputs)
-    # agent = PPOAgent(MLPPolicy, inputs, outputs)
+    # agent = PPOAgent(CNNPolicy, inputs, outputs)
+    agent = PPOAgent(MLPPolicy, inputs, outputs)
 
     reward_history = []
     for i in range(1000):

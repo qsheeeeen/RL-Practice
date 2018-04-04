@@ -3,7 +3,6 @@ import copy
 import torch
 from torch.autograd import Variable
 from torch.distributions import Normal
-from torch.nn import SmoothL1Loss
 from torch.nn.utils import clip_grad_norm
 from torch.optim import Adam
 from torch.utils.data import DataLoader
@@ -43,7 +42,6 @@ class PPOAgent(object):
         self.vf_coeff = vf_coeff
         self.discount_factor = discount_factor
         self.gae_parameter = gae_parameter
-
         self.max_grad_norm = max_grad_norm
         self.train = train
         self.load_weight = load_weight
@@ -62,7 +60,6 @@ class PPOAgent(object):
             self.policy.train()
 
             self.policy_optimizer = Adam(self.policy.parameters(), lr=self.lr, eps=1e-5)
-            self.policy_criterion = SmoothL1Loss().cuda()
 
             self.replay_buffer = ReplayBuffer(self.horizon)
 
