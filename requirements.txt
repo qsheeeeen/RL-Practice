@@ -1,12 +1,6 @@
-blosc
+matplotlib
 gym[box2d]
-h5py
-msgpack
 numpy
-pigpio
-picamera
-pygame
-pyzmq
 torch
 torchvision
 visualdl

@@ -7,7 +7,8 @@ from torch.nn.utils import clip_grad_norm
 from torch.optim import Adam
 from torch.utils.data import DataLoader
 
-from ..util import ReplayBuffer, TensorDataset, processing_image
+from ..util import ReplayBuffer
+from ..util.common import TensorDataset, preprocessing_state
 
 
 class PPOAgent(object):
@@ -68,7 +69,7 @@ class PPOAgent(object):
         torch.backends.cudnn.benchmark = True
 
     def act(self, state, reward=0., done=False):
-        state_t = processing_image(state)
+        state_t = preprocessing_state(state)
 
         mean_v, std_v, value_v = self.policy_old(Variable(state_t.cuda(), volatile=True))
 

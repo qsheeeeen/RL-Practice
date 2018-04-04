@@ -1,4 +1,4 @@
-# Self Driving Car (Unfinished)
+# Reinforcement learning toolbox (Unfinished)
 A self-driving model car running reinforcement learning algorithms implemented in PyTorch.
 ## 1. Result
 ### 1.1 gym environment:

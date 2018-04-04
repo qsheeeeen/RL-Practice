@@ -3,9 +3,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-from self_driving_car.agent import PPOAgent
-# from self_driving_car.policy import CNNPolicy
-from self_driving_car.policy.shared import MLPPolicy
+from rl_toolbox.agent import PPOAgent
+# from rl_toolbox.policy import CNNPolicy
+from rl_toolbox.policy.shared import MLPPolicy
 
 SEED = 123
 
