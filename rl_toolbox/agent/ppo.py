@@ -7,16 +7,15 @@ from torch.nn.utils import clip_grad_norm
 from torch.optim import Adam
 from torch.utils.data import DataLoader
 
+from .core import Agent
 from ..util import ReplayBuffer
 from ..util.common import TensorDataset, preprocessing_state
 
 
-class PPOAgent(object):
+class PPOAgent(Agent):
     def __init__(
             self,
             policy,
-            input_shape,
-            output_shape,
             output_limit=1,
             horizon=2048,
             lr=3e-4,
@@ -32,8 +31,6 @@ class PPOAgent(object):
             save_weight=True,
             weight_path='./ppo_weights.pth'):
 
-        self.input_shape = input_shape
-        self.output_shape = output_shape
         self.output_limit = output_limit
         self.horizon = horizon
         self.lr = lr
@@ -49,7 +46,7 @@ class PPOAgent(object):
         self.save_weight = save_weight
         self.weight_path = weight_path
 
-        self.policy_old = policy(self.input_shape, self.output_shape)
+        self.policy_old = policy
         self.policy_old.eval()
 
         if self.load_weight:
@@ -69,38 +66,35 @@ class PPOAgent(object):
         torch.backends.cudnn.benchmark = True
 
     def act(self, state, reward=0., done=False):
-        state_t = preprocessing_state(state)
+        state_t = preprocessing_state(state).cuda()
 
-        mean_v, std_v, value_v = self.policy_old(Variable(state_t.cuda(), volatile=True))
+        mean_v, std_v, value_v = self.policy_old(Variable(state_t, volatile=True))
 
         if self.train:
             m_v = Normal(mean_v, std_v)
             action_v = m_v.sample()
 
-            action_t = action_v.data.cpu()
+            action_t = action_v.data
 
-            value_t = value_v.data.cpu()
+            value_t = value_v.data
             reward_t = torch.zeros_like(value_t) + reward
 
             if self.stored is not None:
                 self.replay_buffer.store(self.stored + [reward_t])
 
             if self.replay_buffer.full():
-                self._update_policy()
+                self.update()
                 self.replay_buffer.clear()
 
-            self.stored = [state_t, value_t, action_t, m_v.log_prob(action_v).data.cpu()]
+            self.stored = [state_t, value_t, action_t, m_v.log_prob(action_v).data]
 
         else:
-            action_t = mean_v.data.cpu()
+            action_t = mean_v.data
 
-        return torch.clamp(action_t, -self.output_limit, self.output_limit).numpy()[0]
+        return torch.clamp(action_t, -self.output_limit, self.output_limit).cpu().numpy()[0]
 
     def save(self):
         torch.save(self.policy_old.state_dict(), self.weight_path)
-
-    def close(self):
-        pass
 
     def _calculate_advantage(self, rewards_t, values):
         advantages_t = torch.zeros_like(rewards_t)
@@ -112,7 +106,7 @@ class PPOAgent(object):
 
         return advantages_t
 
-    def _update_policy(self):
+    def update(self):
         states_t, values_old_t, actions_old_t, log_probs_old_t, rewards_t = self.replay_buffer.get_all()
 
         advantages_t = self._calculate_advantage(rewards_t, values_old_t)
@@ -127,12 +121,12 @@ class PPOAgent(object):
             for states_t, actions_old_t, advantages_t, values_target_t, log_probs_old_t, values_old_t in data_loader:
                 advantages_t = (advantages_t - advantages_t.mean()) / (advantages_t.std() + 1e-8)
 
-                states_v = Variable(states_t.cuda())
-                actions_old_v = Variable(actions_old_t.cuda())
-                advantages_v = Variable(advantages_t.cuda())
-                values_target_v = Variable(values_target_t.cuda())
-                log_probs_old_v = Variable(log_probs_old_t.cuda())
-                values_old_v = Variable(values_old_t.cuda())
+                states_v = Variable(states_t)
+                actions_old_v = Variable(actions_old_t)
+                advantages_v = Variable(advantages_t)
+                values_target_v = Variable(values_target_t)
+                log_probs_old_v = Variable(log_probs_old_t)
+                values_old_v = Variable(values_old_t)
 
                 means_v, stds_v, values_v = self.policy(states_v)
                 m_v = Normal(means_v, stds_v)

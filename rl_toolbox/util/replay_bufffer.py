@@ -13,7 +13,7 @@ class ReplayBuffer(object):
 
     def get_all(self):
         if isinstance(self.buffer[0], list):
-            return [torch.cat(item[i] for item in self.buffer) for i in range(len(self.buffer[0]))]
+            return [torch.cat([item[i] for item in self.buffer]) for i in range(len(self.buffer[0]))]
         else:
             return torch.cat([item for item in self.buffer], 1)
 

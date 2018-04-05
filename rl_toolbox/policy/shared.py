@@ -113,7 +113,7 @@ class MLPPolicy(nn.Module):
         self.vf_fc2 = nn.Linear(64, 64)
 
         self.mean_fc = nn.Linear(64, output_shape[0])
-        self.std = nn.Parameter(torch.zeros(output_shape[0]))
+        self.log_std = nn.Parameter(torch.zeros(output_shape[0]))
         self.value_fc = nn.Linear(64, 1)
 
         self.apply(orthogonal_init([nn.Linear], 'tanh'))
@@ -136,7 +136,7 @@ class MLPPolicy(nn.Module):
 
         mean = self.mean_fc(pi_h2)
 
-        log_std = self.std.expand_as(mean)
+        log_std = self.log_std.expand_as(mean)
         std = torch.exp(log_std)
 
         value = self.value_fc(vf_h2)

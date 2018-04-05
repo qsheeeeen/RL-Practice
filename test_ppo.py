@@ -4,24 +4,22 @@ import numpy as np
 import torch
 
 from rl_toolbox.agent import PPOAgent
-# from rl_toolbox.policy import CNNPolicy
 from rl_toolbox.policy.shared import MLPPolicy
-
-SEED = 123
 
 
 def main():
-    # env = gym.make('CarRacing-v0')
+    seed = 123
     env = gym.make('LunarLanderContinuous-v2')
-    env.seed(SEED)
+    env.seed(seed)
 
     inputs = env.observation_space.shape
     outputs = env.action_space.shape
 
-    torch.manual_seed(SEED)
+    torch.manual_seed(seed)
 
-    # agent = PPOAgent(CNNPolicy, inputs, outputs, horizon=128, lr=2.5e-4, num_epoch=4, batch_size=4, clip_range=0.1)
-    agent = PPOAgent(MLPPolicy, inputs, outputs)
+    policy = MLPPolicy(inputs, outputs)
+
+    agent = PPOAgent(policy)
 
     reward_history = []
     for i in range(1000):
@@ -40,6 +38,7 @@ def main():
                 print('- Total reward: {:.6}'.format(total_reword))
                 print('--------------------------------------')
                 break
+    env.close()
 
     plt.plot(reward_history)
     plt.title('LunarLanderContinuous-v2')
