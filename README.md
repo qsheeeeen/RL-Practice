@@ -1,7 +1,7 @@
 # Reinforcement learning toolbox (Unfinished)
-Reinforcement learning algorithms implemented in PyTorch.
+Some Reinforcement learning algorithms implemented in PyTorch.
 ## 1. Result
-<img src="image/result1.png" align="middle" width="3000"/>
+<img src="image/result1.png" align="middle" width="300"/>
 
 ## 2. Setup
 Install dependencies according to [requirements.txt](requirements.txt).
