@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.nn.init as init
+
+from ..util.common import orthogonal_init
 
 
 class CNNBase(nn.Module):
@@ -39,8 +40,7 @@ class CNNPolicy(nn.Module):
         self.std = nn.Parameter(torch.zeros(output_shape[0]))
         self.value_fc = nn.Linear(size, 1)
 
-        # Tested work if not apply
-        # self.apply(self.init_weights)
+        self.apply(orthogonal_init([nn.Linear, nn.Conv2d], 'relu'))
 
         self.float()
         self.cuda()
@@ -55,12 +55,6 @@ class CNNPolicy(nn.Module):
         std = torch.exp(log_std)
 
         return mean, std, value
-
-    @staticmethod
-    def init_weights(layer):
-        if isinstance(layer, nn.Linear) or isinstance(layer, nn.Conv2d):
-            init.orthogonal(layer.weight, init.calculate_gain('relu'))
-            layer.bias.data.fill_(0.)
 
 
 # TODO: why extremely slow...
@@ -122,7 +116,7 @@ class MLPPolicy(nn.Module):
         self.std = nn.Parameter(torch.zeros(output_shape[0]))
         self.value_fc = nn.Linear(64, 1)
 
-        self.apply(self._init_weights)
+        self.apply(orthogonal_init([nn.Linear], 'tanh'))
 
         self.float()
         self.cuda()
@@ -148,9 +142,3 @@ class MLPPolicy(nn.Module):
         value = self.value_fc(vf_h2)
 
         return mean, std, value
-
-    @staticmethod
-    def _init_weights(layer):
-        if isinstance(layer, nn.Linear):
-            init.orthogonal(layer.weight, init.calculate_gain('tanh'))
-            layer.bias.data.fill_(0.)

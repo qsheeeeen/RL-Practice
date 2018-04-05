@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-# TODO
-class Runner(object):
+
+class Runner(object):  # TODO
     def __init__(self, env_name, agent_fn, policy_fn, seed=123, agent_args=None):
         self.env = gym.make(env_name)
         self.env.seed(seed)
@@ -14,10 +14,7 @@ class Runner(object):
 
         torch.manual_seed(seed)
 
-        if agent_args is None:
-            self.agent = agent_fn(policy_fn, inputs, outputs)
-        else:
-            self.agent = agent_fn(policy_fn, inputs, outputs, *agent_args)
+        self.agent = agent_fn(policy_fn, inputs, outputs)
 
     def run(self, ):
         reward_history = []
