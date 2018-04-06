@@ -13,6 +13,8 @@ Install dependencies according to [requirements.txt](requirements.txt).
 
 [Parameter Space Noise for Exploration](https://arxiv.org/abs/1706.01905)
 
+[World Models](https://worldmodels.github.io/)
+
 ## Reference
 [Emergence of Locomotion Behaviours in Rich Environments](https://arxiv.org/abs/1707.02286)
 

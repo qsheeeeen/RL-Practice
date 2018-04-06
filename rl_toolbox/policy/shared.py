@@ -2,37 +2,16 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from .common import SmallCNN
 from ..util.common import orthogonal_init
-
-
-class CNNBase(nn.Module):
-    def __init__(self, input_shape, output_shape):
-        assert len(input_shape) == 3, 'Unsupported input shape.'
-        assert len(output_shape) == 1, 'Unsupported output shape.'
-
-        super(CNNBase, self).__init__()
-
-        self.conv1 = nn.Conv2d(3, 32, kernel_size=8, stride=4)
-        self.conv2 = nn.Conv2d(32, 64, kernel_size=4, stride=2)
-        self.conv3 = nn.Conv2d(64, 64, kernel_size=3, stride=1)
-
-        self.fc = nn.Linear(4096, 512)
-
-    def forward(self, x):
-        h1 = F.relu(self.conv1(x))
-        h2 = F.relu(self.conv2(h1))
-        h3 = F.relu(self.conv3(h2))
-
-        h3 = h3.view(h3.size(0), -1)
-
-        return F.relu(self.fc(h3))
 
 
 class CNNPolicy(nn.Module):
     def __init__(self, input_shape, output_shape):
         super(CNNPolicy, self).__init__()
+        self.recurrent = False
 
-        self.base_model = CNNBase(input_shape, output_shape)
+        self.base_model = SmallCNN()
 
         size = self.base_model.fc.out_features
 
@@ -46,10 +25,10 @@ class CNNPolicy(nn.Module):
         self.cuda()
 
     def forward(self, x):
-        size = self.base_model(x)
+        feature = self.base_model(x)
 
-        mean = self.mean_fc(size)
-        value = self.value_fc(size)
+        mean = self.mean_fc(feature)
+        value = self.value_fc(feature)
 
         log_std = self.std.expand_as(mean)
         std = torch.exp(log_std)
@@ -60,8 +39,9 @@ class CNNPolicy(nn.Module):
 class LSTMPolicy(nn.Module):  # TODO(1st): Make this thing work. Why slow. How to train.
     def __init__(self, input_shape, output_shape, batch_size):
         super(LSTMPolicy, self).__init__()
+        self.recurrent = True
 
-        self.base_model = CNNBase(input_shape, output_shape)
+        self.base_model = SmallCNN()
 
         self.size = self.base_model.fc.out_features
 
@@ -72,7 +52,7 @@ class LSTMPolicy(nn.Module):  # TODO(1st): Make this thing work. Why slow. How t
         self.std = nn.Parameter(torch.ones(output_shape[0]))
         self.value_fc = nn.Linear(self.size, 1)
 
-        self.apply(self.base_model.init_weights)
+        self.apply(orthogonal_init)
 
         self.batch_size = batch_size
 
@@ -97,9 +77,6 @@ class LSTMPolicy(nn.Module):  # TODO(1st): Make this thing work. Why slow. How t
 
 class MLPPolicy(nn.Module):
     def __init__(self, input_shape, output_shape):
-        assert len(input_shape) == 1, 'Unsupported input shape.'
-        assert len(output_shape) == 1, 'Unsupported output shape.'
-
         super(MLPPolicy, self).__init__()
 
         self.pi_fc1 = nn.Linear(input_shape[0], 64)
