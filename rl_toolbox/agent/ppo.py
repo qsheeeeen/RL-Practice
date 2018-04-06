@@ -26,10 +26,7 @@ class PPOAgent(Agent):
             discount_factor=0.99,
             gae_parameter=0.95,
             max_grad_norm=0.5,
-            train=True,
-            load_weight=False,
-            save_weight=True,
-            weight_path='./ppo_weights.pth'):
+            train=True):
 
         self.output_limit = output_limit
         self.horizon = horizon
@@ -42,16 +39,9 @@ class PPOAgent(Agent):
         self.gae_parameter = gae_parameter
         self.max_grad_norm = max_grad_norm
         self.train = train
-        self.load_weight = load_weight
-        self.save_weight = save_weight
-        self.weight_path = weight_path
 
         self.policy_old = policy
         self.policy_old.eval()
-
-        if self.load_weight:
-            print('Load weights.')
-            self.policy_old.load_state_dict(torch.load(self.weight_path))
 
         if self.train:
             self.policy = copy.deepcopy(self.policy_old)
@@ -93,9 +83,6 @@ class PPOAgent(Agent):
 
         return torch.clamp(action_t, -self.output_limit, self.output_limit).cpu().numpy()[0]
 
-    def save(self):
-        torch.save(self.policy_old.state_dict(), self.weight_path)
-
     def _calculate_advantage(self, rewards_t, values):
         advantages_t = torch.zeros_like(rewards_t)
         advantages_t[-1] = rewards_t[-1] - values[-1]
@@ -105,6 +92,22 @@ class PPOAgent(Agent):
             advantages_t[t] = delta + self.discount_factor * self.gae_parameter * advantages_t[t + 1]
 
         return advantages_t
+
+    def loss(self, log_probs_v, log_probs_old_v, advantages_v, values_v, values_old_v, values_target_v):
+
+        ratio = torch.exp(log_probs_v - log_probs_old_v)
+
+        pg_losses1 = advantages_v * ratio
+        pg_losses2 = advantages_v * torch.clamp(ratio, 1.0 - self.clip_range, 1.0 + self.clip_range)
+        pg_loss = -torch.mean(torch.min(pg_losses1, pg_losses2))
+
+        values_clipped = values_old_v + torch.clamp(values_v - values_old_v, - self.clip_range, self.clip_range)
+
+        vf_losses1 = torch.pow((values_v - values_target_v), 2)
+        vf_losses2 = torch.pow((values_clipped - values_target_v), 2)
+        vf_loss = torch.mean(torch.max(vf_losses1, vf_losses2))
+
+        return pg_loss + self.vf_coeff * vf_loss
 
     def update(self):
         states_t, values_old_t, actions_old_t, log_probs_old_t, rewards_t = self.replay_buffer.get_all()
@@ -132,26 +135,11 @@ class PPOAgent(Agent):
                 m_v = Normal(means_v, stds_v)
                 log_probs_v = m_v.log_prob(actions_old_v)
 
-                ratio = torch.exp(log_probs_v - log_probs_old_v)
-
-                pg_losses1 = advantages_v * ratio
-                pg_losses2 = advantages_v * torch.clamp(ratio, 1.0 - self.clip_range, 1.0 + self.clip_range)
-                pg_loss = -torch.mean(torch.min(pg_losses1, pg_losses2))
-
-                values_clipped = values_old_v + torch.clamp(values_v - values_old_v, - self.clip_range, self.clip_range)
-
-                vf_losses1 = torch.pow((values_v - values_target_v), 2)
-                vf_losses2 = torch.pow((values_clipped - values_target_v), 2)
-                vf_loss = torch.mean(torch.max(vf_losses1, vf_losses2))
-
-                total_loss = pg_loss + self.vf_coeff * vf_loss
+                loss = self.loss(log_probs_v, log_probs_old_v, advantages_v, values_v, values_old_v, values_target_v)
 
                 self.policy_optimizer.zero_grad()
-                total_loss.backward()
+                loss.backward()
                 clip_grad_norm(self.policy.parameters(), self.max_grad_norm)
                 self.policy_optimizer.step()
 
         self.policy_old.load_state_dict(self.policy.state_dict())
-
-        if self.save_weight:
-            self.save()

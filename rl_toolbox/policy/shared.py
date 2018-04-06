@@ -57,8 +57,7 @@ class CNNPolicy(nn.Module):
         return mean, std, value
 
 
-# TODO: why extremely slow...
-class LSTMPolicy(nn.Module):
+class LSTMPolicy(nn.Module):  # TODO(1st): Make this thing work. Why slow. How to train.
     def __init__(self, input_shape, output_shape, batch_size):
         super(LSTMPolicy, self).__init__()
 
@@ -85,10 +84,7 @@ class LSTMPolicy(nn.Module):
     def forward(self, x):
         feature = self.base_model(x)
 
-        if self.hidden is None:
-            out, self.hidden = self.rnn(feature)
-        else:
-            out, self.hidden = self.rnn(feature, self.hidden)
+        out, self.hidden = (self.rnn(feature) if self.hidden is None else self.rnn(feature, self.hidden))
 
         mean = self.mean_fc(out)
         value = self.value_fc(out)
@@ -142,3 +138,11 @@ class MLPPolicy(nn.Module):
         value = self.value_fc(vf_h2)
 
         return mean, std, value
+
+    def save(self, weight_path):
+        print('Save weights.')
+        torch.save(self.state_dict(), weight_path)
+
+    def load(self, weight_path):
+        print('Load weights.')
+        self.load_state_dict(torch.load(weight_path))

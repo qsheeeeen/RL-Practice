@@ -1,5 +1,3 @@
-# wrap env
+class Wrapper(object):  # TODO(3rd): wrap env. Stack frame.
 
-
-class Wrapper(object):
     pass
