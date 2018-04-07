@@ -1,46 +1,51 @@
+import torch
 import torch.nn as nn
-from torch.autograd import Variable
+import torch.nn.functional as F
 
-from .shared import SmallCNN
-from ..util.common import orthogonal_init
+from .common import SmallCNN, SmallCNNTranspose
+from ..util.init import orthogonal_init
 
 
-def vae_loss():
-    pass
+def vae_loss(recon_x, x, mu, sigma):
+    bce = F.l1_loss(recon_x, x, size_average=False)
+    kl_divergence = -0.5 * torch.sum(1 + sigma - mu.pow(2) - sigma.exp())
+
+    return bce + kl_divergence
 
 
 class VAE(nn.Module):
-    def __init__(self, input_shape, output_shape):
+    def __init__(self, input_shape=(96, 96), output_shape=(128,)):
         super(VAE, self).__init__()
         self.recurrent = False
 
         self.encoder = SmallCNN()
+        self.decoder = SmallCNNTranspose()
+
+        encoder_output_shape = self.encoder.fc.out_features
+
+        self.mu_fc = nn.Linear(encoder_output_shape, output_shape[0])
+        self.sigma_fc = nn.Linear(encoder_output_shape, output_shape[0])
 
         self.apply(orthogonal_init([nn.Linear, nn.Conv2d], 'relu'))
-
-        self.relu = nn.ReLU()
-        self.sigmoid = nn.Sigmoid()
 
         self.float()
         self.cuda()
 
     def encode(self, x):
-        h1 = self.relu(self.fc1(x))
-        return self.fc21(h1), self.fc22(h1)
+        feature = self.encoder(x)
+        mu = self.mu_fc(feature)
+        sigma = self.sigma_fc(feature)
 
-    def reparameterize(self, mu, logvar):
         if self.training:
-            std = logvar.mul(0.5).exp_()
-            eps = Variable(std.data.new(std.size()).normal_())
-            return eps.mul(std).add_(mu)
+            z = mu + sigma * torch.normal(torch.zeros_like(mu), torch.ones_like(mu))
         else:
-            return mu
+            z = mu
+
+        return z, mu, sigma
 
     def decode(self, z):
-        h3 = self.relu(self.fc3(z))
-        return self.sigmoid(self.fc4(h3))
+        return self.decoder(z)
 
     def forward(self, x):
-        mu, logvar = self.encode(x.view(-1, 784))
-        z = self.reparameterize(mu, logvar)
-        return self.decode(z), mu, logvar
+        z, mu, sigma = self.encode(x)
+        return self.decode(z), mu, sigma

@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from .common import SmallCNN
-from ..util.common import orthogonal_init
+from ..util.init import orthogonal_init
 
 
 class CNNPolicy(nn.Module):
@@ -115,11 +115,3 @@ class MLPPolicy(nn.Module):
         value = self.value_fc(vf_h2)
 
         return mean, std, value
-
-    def save(self, weight_path):
-        print('Save weights.')
-        torch.save(self.state_dict(), weight_path)
-
-    def load(self, weight_path):
-        print('Load weights.')
-        self.load_state_dict(torch.load(weight_path))

@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ..util.common import orthogonal_init
+from ..util.init import orthogonal_init
 
 
 def mdn_loss():
