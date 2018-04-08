@@ -14,17 +14,17 @@ def vae_loss(recon_x, x, mu, sigma):
 
 
 class VAE(nn.Module):
-    def __init__(self, input_shape=(96, 96), output_shape=(128,)):
+    def __init__(self, input_shape=(96, 96), z_shape=(128,)):
         super(VAE, self).__init__()
         self.recurrent = False
 
         self.encoder = SmallCNN()
-        self.decoder = SmallCNNTranspose()
+        self.decoder = nn.Sequential(nn.Linear(128, 512), SmallCNNTranspose())
 
         encoder_output_shape = self.encoder.fc.out_features
 
-        self.mu_fc = nn.Linear(encoder_output_shape, output_shape[0])
-        self.sigma_fc = nn.Linear(encoder_output_shape, output_shape[0])
+        self.mu_fc = nn.Linear(encoder_output_shape, z_shape[0])
+        self.sigma_fc = nn.Linear(encoder_output_shape, z_shape[0])
 
         self.apply(orthogonal_init([nn.Linear, nn.Conv2d], 'relu'))
 

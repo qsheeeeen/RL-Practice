@@ -13,35 +13,35 @@ from ..util.common import TensorDataset, preprocessing_state
 
 
 class PPOAgent(Agent):
-    def __init__(
-            self,
-            policy,
-            output_limit=1,
-            horizon=2048,
-            lr=3e-4,
-            num_epoch=10,
-            batch_size=32,
-            clip_range=0.2,
-            vf_coeff=1,
-            discount_factor=0.99,
-            gae_parameter=0.95,
-            max_grad_norm=0.5,
-            train=True):
+    def __init__(self, policy, train=True, **kwargs):
+        if not len(kwargs):
+            kwargs = {
+                'output_limit': 1,
+                'horizon': 2048,
+                'lr': 3e-4,
+                'num_epoch': 10,
+                'batch_size': 32,
+                'clip_range': 0.2,
+                'vf_coeff': 1,
+                'discount_factor': 0.99,
+                'gae_parameter': 0.95,
+                'max_grad_norm': 0.5,
+            }
 
-        self.output_limit = output_limit
-        self.horizon = horizon
-        self.lr = lr
-        self.num_epoch = num_epoch
-        self.batch_size = batch_size
-        self.clip_range = clip_range
-        self.vf_coeff = vf_coeff
-        self.discount_factor = discount_factor
-        self.gae_parameter = gae_parameter
-        self.max_grad_norm = max_grad_norm
-        self.train = train
+        self.output_limit = kwargs['output_limit']
+        self.horizon = kwargs['horizon']
+        self.lr = kwargs['lr']
+        self.num_epoch = kwargs['num_epoch']
+        self.batch_size = kwargs['batch_size']
+        self.clip_range = kwargs['clip_range']
+        self.vf_coeff = kwargs['vf_coeff']
+        self.discount_factor = kwargs['discount_factor']
+        self.gae_parameter = kwargs['gae_parameter']
+        self.max_grad_norm = kwargs['max_grad_norm']
 
         self.policy_old = policy
         self.policy_old.eval()
+        self.train = train
 
         if self.train:
             self.policy = copy.deepcopy(self.policy_old)
@@ -94,7 +94,6 @@ class PPOAgent(Agent):
         return advantages_t
 
     def loss(self, log_probs_v, log_probs_old_v, advantages_v, values_v, values_old_v, values_target_v):
-
         ratio = torch.exp(log_probs_v - log_probs_old_v)
 
         pg_losses1 = advantages_v * ratio

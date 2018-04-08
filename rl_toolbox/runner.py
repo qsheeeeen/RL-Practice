@@ -40,10 +40,10 @@ class Runner(object):
         if load:
             self.policy.load_state_dict(torch.load(weight_path))
 
-    def run(self, num_episode=1000, num_worker=1):
+    def run(self, num_episode=1000, num_worker=1, train=True):
         processes = []
         for i in range(num_worker):
-            args = (self.env_name, self.agent_fn, self.policy, num_episode, self.data_path)
+            args = (self.env_name, self.agent_fn, self.policy, num_episode, self.data_path, train)
             p = mp.Process(target=self.process, args=args)
             p.start()
             processes.append(p)
@@ -54,7 +54,7 @@ class Runner(object):
             torch.save(self.policy.state_dict(), self.weight_path)
 
     @staticmethod
-    def process(env_name, agent_fn, policy, num_episode, data_path):
+    def process(env_name, agent_fn, policy, num_episode, data_path, train):
         process_name = '{}'.format(os.getpid())
         env = gym.make(env_name)
         inputs = env.observation_space.shape
@@ -63,7 +63,7 @@ class Runner(object):
         if data_path is not None:
             recoder = Recoder(data_path + process_name + '.hdf5', inputs, outputs)
 
-        agent = agent_fn(policy)
+        agent = agent_fn(policy, train=train)
 
         reward_history = []
         for episode in range(num_episode):
