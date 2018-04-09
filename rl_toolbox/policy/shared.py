@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .common import SmallCNN
+from .common import SmallCNN, RNNBase
 from ..util.init import orthogonal_init
 
 
@@ -37,24 +37,21 @@ class CNNPolicy(nn.Module):
 
 
 class LSTMPolicy(nn.Module):  # TODO(1st): Make this thing work. Why slow. How to train.
-    def __init__(self, input_shape, output_shape, batch_size):
+    def __init__(self, input_shape, output_shape):
         super(LSTMPolicy, self).__init__()
         self.recurrent = True
 
         self.base_model = SmallCNN()
 
-        self.size = self.base_model.fc.out_features
+        size = self.base_model.fc.out_features
 
-        # self.rnn = nn.LSTMCell(size, size)
-        self.rnn = nn.LSTM(self.size, self.size)
+        self.rnn = RNNBase(size, size)
 
-        self.mean_fc = nn.Linear(self.size, output_shape[0])
+        self.mean_fc = nn.Linear(size, output_shape[0])
         self.std = nn.Parameter(torch.ones(output_shape[0]))
-        self.value_fc = nn.Linear(self.size, 1)
+        self.value_fc = nn.Linear(size, 1)
 
         self.apply(orthogonal_init)
-
-        self.batch_size = batch_size
 
         self.hidden = None
 
@@ -64,10 +61,10 @@ class LSTMPolicy(nn.Module):  # TODO(1st): Make this thing work. Why slow. How t
     def forward(self, x):
         feature = self.base_model(x)
 
-        out, self.hidden = (self.rnn(feature) if self.hidden is None else self.rnn(feature, self.hidden))
+        memory = self.rnn(feature)
 
-        mean = self.mean_fc(out)
-        value = self.value_fc(out)
+        mean = self.mean_fc(memory)
+        value = self.value_fc(memory)
 
         log_std = self.std.expand_as(mean)
         std = torch.exp(log_std)

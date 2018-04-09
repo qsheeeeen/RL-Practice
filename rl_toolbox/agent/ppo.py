@@ -16,19 +16,30 @@ class PPOAgent(Agent):
     def __init__(self, policy, train=True, **kwargs):
         if not len(kwargs):
             kwargs = {
-                'output_limit': 1,
-                'horizon': 2048,
-                'lr': 3e-4,
-                'num_epoch': 10,
+                'abs_utput_limit': 1,
+                'horizon': 128,
+                'lr': 2.5e-4,
+                'num_epoch': 3,
                 'batch_size': 32,
-                'clip_range': 0.2,
+                'clip_range': 0.1,
                 'vf_coeff': 1,
                 'discount_factor': 0.99,
                 'gae_parameter': 0.95,
-                'max_grad_norm': 0.5,
-            }
+                'max_grad_norm': 0.5}
 
-        self.output_limit = kwargs['output_limit']
+            # kwargs = {
+            #     'abs_utput_limit': 1,
+            #     'horizon': 2048,
+            #     'lr': 3e-4,
+            #     'num_epoch': 10,
+            #     'batch_size': 32,
+            #     'clip_range': 0.2,
+            #     'vf_coeff': 1,
+            #     'discount_factor': 0.99,
+            #     'gae_parameter': 0.95,
+            #     'max_grad_norm': 0.5}
+
+        self.abs_utput_limit = kwargs['abs_utput_limit']
         self.horizon = kwargs['horizon']
         self.lr = kwargs['lr']
         self.num_epoch = kwargs['num_epoch']
@@ -81,7 +92,7 @@ class PPOAgent(Agent):
         else:
             action_t = mean_v.data
 
-        return torch.clamp(action_t, -self.output_limit, self.output_limit).cpu().numpy()[0]
+        return torch.clamp(action_t, -self.abs_utput_limit, self.abs_utput_limit).cpu().numpy()[0]
 
     def _calculate_advantage(self, rewards_t, values):
         advantages_t = torch.zeros_like(rewards_t)

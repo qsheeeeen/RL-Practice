@@ -42,7 +42,7 @@ data_t = torch.cat([preprocessing_state(data) for data in data])
 
 length = len(data_t)
 
-data_set = TensorDataset(data_t, data_t)
+data_set = TensorDataset(data_t, torch.zero(len(data_t)))
 
 train_dataset, test_dataset = random_split(data_set, (length - 1000, 1000))
 

@@ -1,5 +1,4 @@
 1. Get 10000 random sample.
-2. Train VAE.
-2. Check out Adversarial Autoencoders.
+2. Train VAE. Check out Adversarial Autoencoders.
 3. Train MDN. TODO: Construct MDN. How to train.
 4. Train agent.

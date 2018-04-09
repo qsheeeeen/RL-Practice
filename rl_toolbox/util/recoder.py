@@ -8,29 +8,33 @@ class Recoder(object):
 
         self.file = h5py.File(data_path, 'w')
 
-        self.state_dataset = self.file.create_dataset('states',
-                                                      (self.num_sample,) + state_shape,
-                                                      np.uint8,
-                                                      chunks=(1,) + state_shape,
-                                                      maxshape=(None,) + state_shape)
+        self.state_dataset = self.file.create_dataset(
+            'states',
+            (self.num_sample,) + state_shape,
+            np.uint8,
+            chunks=(1,) + state_shape,
+            maxshape=(None,) + state_shape)
 
-        self.action_dataset = self.file.create_dataset('actions',
-                                                       (self.num_sample,) + action_shape,
-                                                       np.float32,
-                                                       chunks=(1,) + action_shape,
-                                                       maxshape=(None,) + action_shape)
+        self.action_dataset = self.file.create_dataset(
+            'actions',
+            (self.num_sample,) + action_shape,
+            np.float32,
+            chunks=(1,) + action_shape,
+            maxshape=(None,) + action_shape)
 
-        self.reward_dataset = self.file.create_dataset('rewards',
-                                                       (self.num_sample, 1),
-                                                       np.float32,
-                                                       chunks=(1, 1),
-                                                       maxshape=(None, 1))
+        self.reward_dataset = self.file.create_dataset(
+            'rewards',
+            (self.num_sample, 1),
+            np.float32,
+            chunks=(1, 1),
+            maxshape=(None, 1))
 
-        self.done_dataset = self.file.create_dataset('dones',
-                                                     (self.num_sample, 1),
-                                                     np.bool,
-                                                     chunks=(1, 1),
-                                                     maxshape=(None, 1))
+        self.done_dataset = self.file.create_dataset(
+            'dones',
+            (self.num_sample, 1),
+            np.bool,
+            chunks=(1, 1),
+            maxshape=(None, 1))
         self.count = 0
 
     def store(self, state, action, reward, done):

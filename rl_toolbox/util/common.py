@@ -16,6 +16,14 @@ def preprocessing_state(array):
     return tensor.unsqueeze(0)
 
 
+def batch_to_sequence(x):
+    return x.unsqueeze(1)
+
+
+def sequence_to_batch(x):
+    return x.squeeze(1)
+
+
 class TensorDataset(Dataset):
     def __init__(self, *tensors):
         assert all(tensors[0].size(0) == tensor.size(0) for tensor in tensors)

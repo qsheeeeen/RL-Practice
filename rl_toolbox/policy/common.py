@@ -1,6 +1,8 @@
 import torch.nn as nn
 import torch.nn.functional as F
 
+from ..util.common import batch_to_sequence, sequence_to_batch
+
 
 class SmallCNN(nn.Module):
     def __init__(self):
@@ -40,3 +42,21 @@ class SmallCNNTranspose(nn.Module):
         h3 = F.relu(self.convt2(h2))
 
         return F.sigmoid(self.convt3(h3))
+
+
+class RNNBase(nn.Module):
+    def __init__(self, input_size, output_size):
+        super(RNNBase, self).__init__()
+        self.rnn = nn.LSTM(input_size, output_size)
+
+        self.hidden = None
+
+    def forward(self, x):
+        x = batch_to_sequence(x)
+
+        if self.hidden is not None:
+            c, h = self.hidden
+            self.hidden = c.detach(), h.detach()
+
+        out, self.hidden = self.rnn(x) if self.hidden is None else self.rnn(x, self.hidden)
+        return sequence_to_batch(out)
