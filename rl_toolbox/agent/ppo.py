@@ -3,7 +3,6 @@ import copy
 import torch
 import torch.nn.functional as F
 from torch.autograd import Variable
-from torch.distributions import Normal
 from torch.nn.utils import clip_grad_norm
 from torch.optim import Adam
 from torch.utils.data import DataLoader
@@ -59,14 +58,10 @@ class PPOAgent(Agent):
     def act(self, state, reward=0., done=False):
         state_t = preprocessing_state(state).cuda()
 
-        mean_v, std_v, value_v = self.policy_old(Variable(state_t, volatile=True))
+        action_v, value_v = self.policy_old(Variable(state_t, volatile=True))
+        action_t = action_v.data
 
         if self.train:
-            m_v = Normal(mean_v, std_v)
-            action_v = m_v.sample()
-
-            action_t = action_v.data
-
             value_t = value_v.data
             reward_t = torch.zeros_like(value_t) + reward
 
@@ -77,10 +72,7 @@ class PPOAgent(Agent):
                 self.update()
                 self.replay_buffer.clear()
 
-            self.stored = [state_t, value_t, action_t, m_v.log_prob(action_v).data]
-
-        else:
-            action_t = mean_v.data
+            self.stored = [state_t, value_t, action_t, self.policy_old.log_prob(action_v).data]
 
         return torch.clamp(action_t, -self.abs_utput_limit, self.abs_utput_limit).cpu().numpy()[0]
 
@@ -102,10 +94,6 @@ class PPOAgent(Agent):
         pg_loss = -torch.mean(torch.min(pg_losses1, pg_losses2))
 
         values_clipped = values_old_v + torch.clamp(values_v - values_old_v, - self.clip_range, self.clip_range)
-
-        # vf_losses1 = torch.pow((values_v - values_target_v), 2)
-        # vf_losses2 = torch.pow((values_clipped - values_target_v), 2)
-        # vf_loss = torch.mean(torch.max(vf_losses1, vf_losses2))
 
         vf_losses1 = F.mse_loss(values_v, values_target_v)
         vf_losses2 = F.mse_loss(values_clipped, values_target_v)
@@ -135,9 +123,8 @@ class PPOAgent(Agent):
                 log_probs_old_v = Variable(log_probs_old_t)
                 values_old_v = Variable(values_old_t)
 
-                means_v, stds_v, values_v = self.policy(states_v)
-                m_v = Normal(means_v, stds_v)
-                log_probs_v = m_v.log_prob(actions_old_v)
+                actions_v, values_v = self.policy(states_v)
+                log_probs_v = self.policy.log_prob(actions_old_v)
 
                 loss = self.loss(log_probs_v, log_probs_old_v, advantages_v, values_v, values_old_v, values_target_v)
 

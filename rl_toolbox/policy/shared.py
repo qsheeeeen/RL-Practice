@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.distributions import Normal
 
 from .common import SmallCNN, RNNBase
 from ..util.init import orthogonal_init
@@ -102,17 +103,22 @@ class MLPPolicy(nn.Module):
         pi_h2 = self.pi_fc2(pi_h1)
         pi_h2 = F.tanh(pi_h2)
 
+        mean = self.mean_fc(pi_h2)
+        log_std = self.log_std.expand_as(mean)
+        std = torch.exp(log_std)
+
         vf_h1 = self.vf_fc1(x)
         vf_h1 = F.tanh(vf_h1)
 
         vf_h2 = self.vf_fc2(vf_h1)
         vf_h2 = F.tanh(vf_h2)
 
-        mean = self.mean_fc(pi_h2)
-
-        log_std = self.log_std.expand_as(mean)
-        std = torch.exp(log_std)
-
         value = self.value_fc(vf_h2)
 
-        return mean, std, value
+        self.distribution = Normal(mean, std)
+        action = self.distribution.sample()
+
+        return action, value
+
+    def log_prob(self, x):
+        return self.distribution.log_prob(x)
