@@ -2,7 +2,7 @@ import argparse
 
 from rl_toolbox import Runner
 from rl_toolbox.agent import PPOAgent
-from rl_toolbox.policy import CNNPolicy, LSTMPolicy
+from rl_toolbox.policy import CNNPolicy,MLPPolicy,LSTMPolicy
 
 
 def get_args():
@@ -33,10 +33,17 @@ def get_args():
     return parser.parse_args()
 
 
-# Collect data: load=False, Train=False
-
 def main():
-    # runner = Runner('LunarLanderContinuous-v2', PPOAgent, MLPPolicy, data_path='./data/')
+    # runner = Runner(
+    #     'LunarLanderContinuous-v2',
+    #     PPOAgent,
+    #     MLPPolicy,
+    #     record_data=False,
+    #     data_path=None,
+    #     save=True,
+    #     load=False,
+    #     weight_path='./weights/mlp_policy_weights.pth')
+
     runner = Runner(
         'CarRacing-v0',
         PPOAgent,
@@ -45,7 +52,7 @@ def main():
         data_path=None,
         save=True,
         load=False,
-        weight_path='./weights/lstm_policy_weights.pth')
+        weight_path='./weights/cnn_policy_weights.pth')
 
     runner.run(num_episode=1000, num_worker=6, train=True)
 

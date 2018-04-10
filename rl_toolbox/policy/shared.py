@@ -11,21 +11,22 @@ class CNNPolicy(nn.Module):
         super(CNNPolicy, self).__init__()
         self.recurrent = False
 
-        self.base_model = SmallCNN()
+        self.cnn = SmallCNN()
 
-        size = self.base_model.fc.out_features
+        size = self.cnn.fc.out_features
 
         self.mean_fc = nn.Linear(size, output_shape[0])
         self.std = nn.Parameter(torch.zeros(output_shape[0]))
         self.value_fc = nn.Linear(size, 1)
 
-        self.apply(orthogonal_init([nn.Linear, nn.Conv2d], 'relu'))
+        self.apply(orthogonal_init([nn.Linear], 'linear'))
+        self.cnn.apply(orthogonal_init([nn.Linear], 'relu'))
 
         self.float()
         self.cuda()
 
     def forward(self, x):
-        feature = self.base_model(x)
+        feature = self.cnn(x)
 
         mean = self.mean_fc(feature)
         value = self.value_fc(feature)
@@ -36,14 +37,14 @@ class CNNPolicy(nn.Module):
         return mean, std, value
 
 
-class LSTMPolicy(nn.Module):  # TODO(1st): Make this thing work. Why slow. How to train.
+class LSTMPolicy(nn.Module):  # TODO(1st): How to train.
     def __init__(self, input_shape, output_shape):
         super(LSTMPolicy, self).__init__()
         self.recurrent = True
 
-        self.base_model = SmallCNN()
+        self.cnn = SmallCNN()
 
-        size = self.base_model.fc.out_features
+        size = self.cnn.fc.out_features
 
         self.rnn = RNNBase(size, size)
 
@@ -51,7 +52,9 @@ class LSTMPolicy(nn.Module):  # TODO(1st): Make this thing work. Why slow. How t
         self.std = nn.Parameter(torch.ones(output_shape[0]))
         self.value_fc = nn.Linear(size, 1)
 
-        self.apply(orthogonal_init)
+        self.apply(orthogonal_init([nn.Linear], 'linear'))
+        self.cnn.apply(orthogonal_init([nn.Linear], 'relu'))
+        self.rnn.apply(orthogonal_init([nn.Linear], 'tanh'))
 
         self.hidden = None
 
@@ -59,7 +62,7 @@ class LSTMPolicy(nn.Module):  # TODO(1st): Make this thing work. Why slow. How t
         self.cuda()
 
     def forward(self, x):
-        feature = self.base_model(x)
+        feature = self.cnn(x)
 
         memory = self.rnn(feature)
 
@@ -75,6 +78,7 @@ class LSTMPolicy(nn.Module):  # TODO(1st): Make this thing work. Why slow. How t
 class MLPPolicy(nn.Module):
     def __init__(self, input_shape, output_shape):
         super(MLPPolicy, self).__init__()
+        self.recurrent = False
 
         self.pi_fc1 = nn.Linear(input_shape[0], 64)
         self.pi_fc2 = nn.Linear(64, 64)

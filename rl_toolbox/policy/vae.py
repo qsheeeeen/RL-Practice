@@ -7,7 +7,7 @@ from ..util.init import orthogonal_init
 
 
 def vae_loss(recon_x, x, mu, sigma):
-    bce = F.l1_loss(recon_x, x, size_average=False)
+    bce = F.mse_loss(recon_x, x, size_average=False)
     kl_divergence = -0.5 * torch.sum(1 + sigma - mu.pow(2) - sigma.exp())
 
     return bce + kl_divergence

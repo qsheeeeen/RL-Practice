@@ -1,6 +1,7 @@
 import copy
 
 import torch
+import torch.nn.functional as F
 from torch.autograd import Variable
 from torch.distributions import Normal
 from torch.nn.utils import clip_grad_norm
@@ -17,27 +18,15 @@ class PPOAgent(Agent):
         if not len(kwargs):
             kwargs = {
                 'abs_utput_limit': 1,
-                'horizon': 128,
-                'lr': 2.5e-4,
-                'num_epoch': 3,
+                'horizon': 2048,
+                'lr': 3e-4,
+                'num_epoch': 10,
                 'batch_size': 32,
-                'clip_range': 0.1,
+                'clip_range': 0.2,
                 'vf_coeff': 1,
                 'discount_factor': 0.99,
                 'gae_parameter': 0.95,
                 'max_grad_norm': 0.5}
-
-            # kwargs = {
-            #     'abs_utput_limit': 1,
-            #     'horizon': 2048,
-            #     'lr': 3e-4,
-            #     'num_epoch': 10,
-            #     'batch_size': 32,
-            #     'clip_range': 0.2,
-            #     'vf_coeff': 1,
-            #     'discount_factor': 0.99,
-            #     'gae_parameter': 0.95,
-            #     'max_grad_norm': 0.5}
 
         self.abs_utput_limit = kwargs['abs_utput_limit']
         self.horizon = kwargs['horizon']
@@ -51,6 +40,7 @@ class PPOAgent(Agent):
         self.max_grad_norm = kwargs['max_grad_norm']
 
         self.policy_old = policy
+        self.recurrent = self.policy_old.recurrent
         self.policy_old.eval()
         self.train = train
 
@@ -113,9 +103,13 @@ class PPOAgent(Agent):
 
         values_clipped = values_old_v + torch.clamp(values_v - values_old_v, - self.clip_range, self.clip_range)
 
-        vf_losses1 = torch.pow((values_v - values_target_v), 2)
-        vf_losses2 = torch.pow((values_clipped - values_target_v), 2)
-        vf_loss = torch.mean(torch.max(vf_losses1, vf_losses2))
+        # vf_losses1 = torch.pow((values_v - values_target_v), 2)
+        # vf_losses2 = torch.pow((values_clipped - values_target_v), 2)
+        # vf_loss = torch.mean(torch.max(vf_losses1, vf_losses2))
+
+        vf_losses1 = F.mse_loss(values_v, values_target_v)
+        vf_losses2 = F.mse_loss(values_clipped, values_target_v)
+        vf_loss = torch.max(vf_losses1, vf_losses2)
 
         return pg_loss + self.vf_coeff * vf_loss
 
@@ -128,7 +122,7 @@ class PPOAgent(Agent):
 
         dataset = TensorDataset(states_t, actions_old_t, advantages_t, values_target_t, log_probs_old_t, values_old_t)
 
-        data_loader = DataLoader(dataset, self.batch_size, shuffle=True)
+        data_loader = DataLoader(dataset, self.batch_size, shuffle=not self.recurrent)
 
         for _ in range(self.num_epoch):
             for states_t, actions_old_t, advantages_t, values_target_t, log_probs_old_t, values_old_t in data_loader:
