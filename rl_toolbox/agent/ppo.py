@@ -63,24 +63,24 @@ class PPOAgent(Agent):
         action_v = pd.sample()
 
         if self.train:
-            action_t = action_v.data
+            action_t = action_v.data.cpu()
 
             value_t = value_v.data
             reward_t = torch.zeros_like(value_t) + reward
 
             if self.stored is not None:
-                self.replay_buffer.store(self.stored + [reward_t])
+                self.replay_buffer.store(self.stored + [reward_t.cpu()])
 
             if self.replay_buffer.full():
-                self.update()
+                self._update()
                 self.replay_buffer.clear()
 
-            self.stored = [state_t, value_t, action_t, pd.log_prob(action_v).data]
+            self.stored = [state_t.cpu(), value_t.cpu(), action_t.cpu(), pd.log_prob(action_v).data.cpu()]
 
         else:
             action_t = mean_v.data
 
-        return torch.clamp(action_t, -self.abs_output_limit, self.abs_output_limit).cpu().numpy()[0]
+        return torch.clamp(action_t, -self.abs_output_limit, self.abs_output_limit).numpy()[0]
 
     def _calculate_advantage(self, rewards_t, values):
         advantages_t = torch.zeros_like(rewards_t)
@@ -92,7 +92,7 @@ class PPOAgent(Agent):
 
         return advantages_t
 
-    def update(self):
+    def _update(self):
         states_t, values_old_t, actions_old_t, log_probs_old_t, rewards_t = self.replay_buffer.get_all()
 
         advantages_t = self._calculate_advantage(rewards_t, values_old_t)
@@ -107,12 +107,12 @@ class PPOAgent(Agent):
             for states_t, actions_old_t, advantages_t, values_target_t, log_probs_old_t, values_old_t in data_loader:
                 advantages_t = (advantages_t - advantages_t.mean()) / (advantages_t.std() + 1e-8)
 
-                states_v = Variable(states_t)
-                actions_old_v = Variable(actions_old_t)
-                advantages_v = Variable(advantages_t)
-                values_target_v = Variable(values_target_t)
-                log_probs_old_v = Variable(log_probs_old_t)
-                values_old_v = Variable(values_old_t)
+                states_v = Variable(states_t.cuda())
+                actions_old_v = Variable(actions_old_t.cuda())
+                advantages_v = Variable(advantages_t.cuda())
+                values_target_v = Variable(values_target_t.cuda())
+                log_probs_old_v = Variable(log_probs_old_t.cuda())
+                values_old_v = Variable(values_old_t.cuda())
 
                 means_v, stds_v, values_v = self.policy(states_v)
                 pd = self.policy_old.pd_fn(means_v, stds_v)
