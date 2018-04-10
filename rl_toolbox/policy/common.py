@@ -44,9 +44,9 @@ class SmallCNNTranspose(nn.Module):
         return F.sigmoid(self.convt3(h3))
 
 
-class RNNBase(nn.Module):
+class SmallRNN(nn.Module):
     def __init__(self, input_size, output_size):
-        super(RNNBase, self).__init__()
+        super(SmallRNN, self).__init__()
         self.rnn = nn.LSTM(input_size, output_size)
 
         self.hidden = None

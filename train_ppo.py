@@ -2,7 +2,7 @@ import argparse
 
 from rl_toolbox import Runner
 from rl_toolbox.agent import PPOAgent
-from rl_toolbox.policy import LSTMPolicy,MLPPolicy
+from rl_toolbox.policy import MLPPolicy
 
 
 def get_args():
@@ -54,7 +54,7 @@ def main():
     #     load=False,
     #     weight_path='./weights/cnn_policy_weights.pth')
 
-    runner.run(num_episode=500, num_worker=1, train=True)
+    runner.run(num_episode=300, num_worker=1, train=True)
 
 
 if __name__ == '__main__':
