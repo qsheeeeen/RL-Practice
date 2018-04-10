@@ -20,7 +20,7 @@ class Runner(object):
             save=True,
             load=False,
             weight_path='./weights/ppo_weights.pth',
-            seed=1):
+            seed=123):
         self.env_name = env_name
         self.agent_fn = agent_fn
         self.policy_fn = policy_fn
@@ -50,8 +50,6 @@ class Runner(object):
         processes = []
 
         for i in range(num_worker):
-            self.seed += 1
-
             args = (
                 self.env_name,
                 self.agent_fn,
@@ -62,6 +60,8 @@ class Runner(object):
                 self.save,
                 self.weight_path,
                 self.seed)
+
+            self.seed += 1
 
             p = mp.Process(target=self.process, args=args)
             p.start()

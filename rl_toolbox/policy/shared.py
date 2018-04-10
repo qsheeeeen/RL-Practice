@@ -17,11 +17,11 @@ class CNNPolicy(nn.Module):
         size = self.cnn.fc.out_features
 
         self.mean_fc = nn.Linear(size, output_shape[0])
-        self.std = nn.Parameter(torch.zeros(output_shape[0]))
+        self.log_std = nn.Parameter(torch.zeros(output_shape[0]))
         self.value_fc = nn.Linear(size, 1)
 
         self.apply(orthogonal_init([nn.Linear], 'linear'))
-        self.cnn.apply(orthogonal_init([nn.Linear], 'relu'))
+        self.cnn.apply(orthogonal_init([nn.Linear, nn.Conv2d], 'relu'))
 
         self.float()
         self.cuda()
@@ -30,12 +30,18 @@ class CNNPolicy(nn.Module):
         feature = self.cnn(x)
 
         mean = self.mean_fc(feature)
-        value = self.value_fc(feature)
-
-        log_std = self.std.expand_as(mean)
+        log_std = self.log_std.expand_as(mean)
         std = torch.exp(log_std)
 
-        return mean, std, value
+        value = self.value_fc(feature)
+
+        self.distribution = Normal(mean, std)
+        action = self.distribution.sample()
+
+        return action, value
+
+    def log_prob(self, x):
+        return self.distribution.log_prob(x)
 
 
 class LSTMPolicy(nn.Module):  # TODO(1st): How to train.
@@ -50,12 +56,12 @@ class LSTMPolicy(nn.Module):  # TODO(1st): How to train.
         self.rnn = RNNBase(size, size)
 
         self.mean_fc = nn.Linear(size, output_shape[0])
-        self.std = nn.Parameter(torch.ones(output_shape[0]))
+        self.log_std = nn.Parameter(torch.ones(output_shape[0]))
         self.value_fc = nn.Linear(size, 1)
 
         self.apply(orthogonal_init([nn.Linear], 'linear'))
         self.cnn.apply(orthogonal_init([nn.Linear], 'relu'))
-        self.rnn.apply(orthogonal_init([nn.Linear], 'tanh'))
+        self.rnn.apply(orthogonal_init([nn.RNNBase], 'tanh'))
 
         self.hidden = None
 
@@ -68,12 +74,18 @@ class LSTMPolicy(nn.Module):  # TODO(1st): How to train.
         memory = self.rnn(feature)
 
         mean = self.mean_fc(memory)
-        value = self.value_fc(memory)
-
         log_std = self.std.expand_as(mean)
         std = torch.exp(log_std)
 
-        return mean, std, value
+        value = self.value_fc(memory)
+
+        self.distribution = Normal(mean, std)
+        action = self.distribution.sample()
+
+        return action, value
+
+    def log_prob(self, x):
+        return self.distribution.log_prob(x)
 
 
 class MLPPolicy(nn.Module):
