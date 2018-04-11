@@ -75,7 +75,7 @@ class Runner(object):
 
     @staticmethod
     def process(env_name, agent_fn, policy, num_episode, train, data_path, save, weight_path, seed):
-        save_interval = 5
+        save_interval = 10
 
         process_name = '{}'.format(os.getpid())
         env = gym.make(env_name)
@@ -112,7 +112,7 @@ class Runner(object):
                     reward_history.append(total_reword)
                     print('- PID:{}'.format(os.getpid()))
                     print('- Done.\tEpisode:{}\tStep:{}'.format(episode, step))
-                    print('- Total reward: {:.6}'.format(total_reword))
+                    print('- Total reward:\t{:.6}'.format(total_reword))
                     if save and (episode % save_interval == 0):
                         torch.save(policy.state_dict(), weight_path)
                         print('- Weights Saved.')

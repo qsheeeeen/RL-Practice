@@ -1,10 +1,10 @@
 import copy
 
 import torch
-import torch.nn.functional as F
 from torch.autograd import Variable
+from torch.distributions import Normal
 from torch.nn.utils import clip_grad_norm
-from torch.optim import Adam
+from torch.optim import Adam, RMSprop
 from torch.utils.data import DataLoader
 
 from .core import Agent
@@ -39,7 +39,6 @@ class PPOAgent(Agent):
         self.max_grad_norm = kwargs['max_grad_norm']
 
         self.policy_old = policy
-        self.policy_old.recurrent = self.policy_old.recurrent
         self.policy_old.eval()
         self.train = train
 
@@ -47,7 +46,10 @@ class PPOAgent(Agent):
             self.policy = copy.deepcopy(self.policy_old)
             self.policy.train()
 
-            self.policy_optimizer = Adam(self.policy.parameters(), lr=self.lr, eps=1e-5)
+            if self.policy.recurrent:
+                self.policy_optimizer = RMSprop(self.policy.parameters(), lr=self.lr, eps=1e-5)
+            else:
+                self.policy_optimizer = Adam(self.policy.parameters(), lr=self.lr, eps=1e-5)
 
             self.replay_buffer = ReplayBuffer(self.horizon)
 
@@ -56,29 +58,30 @@ class PPOAgent(Agent):
         torch.backends.cudnn.benchmark = True
 
     def act(self, state, reward=0., done=False):
-        state_t = preprocessing_state(state).cuda()
+        state_t = preprocessing_state(state)
 
-        mean_v, std_v, value_v = self.policy_old(Variable(state_t, volatile=True))
-        pd = self.policy_old.pd_fn(mean_v, std_v)
-        action_v = pd.sample()
+        mean_v, std_v, value_v = self.policy_old(Variable(state_t.cuda(), volatile=True))
 
         if self.train:
+            m_v = self.policy_old.pd_fn(mean_v, std_v)
+            action_v = m_v.sample()
+
             action_t = action_v.data.cpu()
 
-            value_t = value_v.data
+            value_t = value_v.data.cpu()
             reward_t = torch.zeros_like(value_t) + reward
 
             if self.stored is not None:
-                self.replay_buffer.store(self.stored + [reward_t.cpu()])
+                self.replay_buffer.store(self.stored + [reward_t])
 
             if self.replay_buffer.full():
-                self._update()
+                self._update_policy()
                 self.replay_buffer.clear()
 
-            self.stored = [state_t.cpu(), value_t.cpu(), action_t.cpu(), pd.log_prob(action_v).data.cpu()]
+            self.stored = [state_t, value_t, action_t, m_v.log_prob(action_v).data.cpu()]
 
         else:
-            action_t = mean_v.data
+            action_t = mean_v.data.cpu()
 
         return torch.clamp(action_t, -self.abs_output_limit, self.abs_output_limit).numpy()[0]
 
@@ -92,7 +95,7 @@ class PPOAgent(Agent):
 
         return advantages_t
 
-    def _update(self):
+    def _update_policy(self):
         states_t, values_old_t, actions_old_t, log_probs_old_t, rewards_t = self.replay_buffer.get_all()
 
         advantages_t = self._calculate_advantage(rewards_t, values_old_t)
@@ -101,7 +104,7 @@ class PPOAgent(Agent):
 
         dataset = TensorDataset(states_t, actions_old_t, advantages_t, values_target_t, log_probs_old_t, values_old_t)
 
-        data_loader = DataLoader(dataset, self.batch_size, shuffle=not self.policy_old.recurrent)
+        data_loader = DataLoader(dataset, self.batch_size, shuffle=not self.policy.recurrent)
 
         for _ in range(self.num_epoch):
             for states_t, actions_old_t, advantages_t, values_target_t, log_probs_old_t, values_old_t in data_loader:
@@ -115,8 +118,8 @@ class PPOAgent(Agent):
                 values_old_v = Variable(values_old_t.cuda())
 
                 means_v, stds_v, values_v = self.policy(states_v)
-                pd = self.policy_old.pd_fn(means_v, stds_v)
-                log_probs_v = pd.log_prob(actions_old_v)
+                m_v = Normal(means_v, stds_v)
+                log_probs_v = m_v.log_prob(actions_old_v)
 
                 ratio = torch.exp(log_probs_v - log_probs_old_v)
 
@@ -126,9 +129,9 @@ class PPOAgent(Agent):
 
                 values_clipped = values_old_v + torch.clamp(values_v - values_old_v, - self.clip_range, self.clip_range)
 
-                vf_losses1 = F.mse_loss(values_v, values_target_v)
-                vf_losses2 = F.mse_loss(values_clipped, values_target_v)
-                vf_loss = torch.max(vf_losses1, vf_losses2)
+                vf_losses1 = torch.pow((values_v - values_target_v), 2)
+                vf_losses2 = torch.pow((values_clipped - values_target_v), 2)
+                vf_loss = torch.mean(torch.max(vf_losses1, vf_losses2))
 
                 total_loss = pg_loss + self.vf_coeff * vf_loss
 
