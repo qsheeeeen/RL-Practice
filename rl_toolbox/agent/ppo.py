@@ -13,6 +13,9 @@ from ..util.common import TensorDataset, preprocessing_state
 
 class PPOAgent(Agent):
     def __init__(self, policy, train=True, **kwargs):
+        self.policy_old = policy
+        self.train = train
+
         if not len(kwargs):
             kwargs = {
                 'abs_output_limit': 1,
@@ -37,13 +40,9 @@ class PPOAgent(Agent):
         self.gae_parameter = kwargs['gae_parameter']
         self.max_grad_norm = kwargs['max_grad_norm']
 
-        self.policy_old = policy
-        self.policy_old.eval()
-        self.train = train
-
         if self.train:
+            self.policy_old.train()
             self.policy = copy.deepcopy(self.policy_old)
-            self.policy.train()
 
             if self.policy.recurrent:
                 self.policy_optimizer = RMSprop(self.policy.parameters(), lr=self.lr, eps=1e-5)
@@ -53,6 +52,8 @@ class PPOAgent(Agent):
             self.replay_buffer = ReplayBuffer(self.horizon)
 
             self.stored = None
+        else:
+            self.policy_old.eval()
 
         torch.backends.cudnn.benchmark = True
 

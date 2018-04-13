@@ -2,7 +2,7 @@ import argparse
 
 from rl_toolbox import Runner
 from rl_toolbox.agent import PPOAgent
-from rl_toolbox.policy import MLPPolicy, CNNPolicy, MLPLSTMPolicy
+from rl_toolbox.policy import MLPPolicy
 
 
 def get_args():

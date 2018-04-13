@@ -12,7 +12,7 @@ class CNNPolicy(Policy):
     def __init__(self, input_shape, output_shape):
         super(CNNPolicy, self).__init__()
         self.recurrent = False
-        self.pd_fn = Normal
+        self.pd = None
 
         self.cnn = SmallCNN()
 
@@ -37,13 +37,20 @@ class CNNPolicy(Policy):
 
         value = self.value_fc(feature)
 
-        return mean, std, value
+        self.pd = Normal(mean, std)
+        action = self.pd.sample()
+
+        return action, value
+
+    def log_prob(self, x):
+        return self.pd.log_prob(x)
 
 
 class CNNLSTMPolicy(Policy):
     def __init__(self, input_shape, output_shape):
         super(CNNLSTMPolicy, self).__init__()
         self.recurrent = True
+        self.pd = None
 
         self.cnn = SmallCNN()
 
@@ -73,7 +80,13 @@ class CNNLSTMPolicy(Policy):
         log_std = self.log_std.expand_as(mean)
         std = torch.exp(log_std)
 
-        return mean, std, value
+        self.pd = Normal(mean, std)
+        action = self.pd.sample()
+
+        return action, value
+
+    def log_prob(self, x):
+        return self.pd.log_prob(x)
 
 
 class MLPPolicy(Policy):
@@ -101,17 +114,17 @@ class MLPPolicy(Policy):
         pi_h1 = F.tanh(self.pi_fc1(x))
         pi_h2 = F.tanh(self.pi_fc2(pi_h1))
 
+        # NOTE: try tanh
         mean = self.mean_fc(pi_h2)
-        # TODO: try tanh
         log_std = self.log_std.expand_as(mean)
         std = torch.exp(log_std)
+
+        self.pd = Normal(mean, std)
+        action = self.pd.sample() if self.training else mean
 
         vf_h1 = F.tanh(self.vf_fc1(x))
         vf_h2 = F.tanh(self.vf_fc2(vf_h1))
         value = self.value_fc(vf_h2)
-
-        self.pd = Normal(mean, std)
-        action = self.pd.sample()
 
         return action, value
 
@@ -123,7 +136,7 @@ class MLPLSTMPolicy(Policy):  # Note: Try single rnn layer
     def __init__(self, input_shape, output_shape):
         super(MLPLSTMPolicy, self).__init__()
         self.recurrent = True
-        self.pd_fn = Normal
+        self.pd = None
 
         self.pi_fc = nn.Linear(input_shape[0], 64)
         self.pi_rnn = SmallRNN(64, 64)
@@ -152,4 +165,10 @@ class MLPLSTMPolicy(Policy):  # Note: Try single rnn layer
         vf_h2 = F.tanh(self.vf_rnn(vf_h1))
         value = self.value_fc(vf_h2)
 
-        return mean, std, value
+        self.pd = Normal(mean, std)
+        action = self.pd.sample()
+
+        return action, value
+
+    def log_prob(self, x):
+        return self.pd.log_prob(x)

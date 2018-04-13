@@ -42,7 +42,7 @@ class MixtureNormal(Distribution):  # TODO: Sample. Test.
         self.pi = pi
         self.mean = mean
         self.std = std
-        self.m = Normal(self.mean, self.std)
+        self.pd = Normal(self.mean, self.std)
 
     def sample(self):
         use_cuda = self.pi.is_cuda
@@ -55,15 +55,15 @@ class MixtureNormal(Distribution):  # TODO: Sample. Test.
         # rn = torch.randn(n_samples)
         # sampled = rn * self.std[indices] + self.meanindices]
         # return torch.FloatTensor(sample).cuda() if use_cuda else torch.FloatTensor(sample)
+        return
 
     def sample_n(self, n):
         raise NotImplementedError
 
     def log_prob(self, value):
-        value = value.expand_as(self.mean)
-        log_probs = self.m.log_prob(value)
+        value = value.unsqueeze(-1).expand_as(self.mean)
+        log_probs = self.pd.log_prob(value)
         probs = torch.exp(log_probs)
         weighted_probs = self.pi * probs
         sum_prob = torch.sum(weighted_probs, -1)
-        sum_log_prob = torch.log(sum_prob)
-        return sum_log_prob
+        return torch.log(sum_prob)
