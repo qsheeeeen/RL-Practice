@@ -9,7 +9,7 @@ from torch.autograd import Variable
 from torch.utils.data.dataset import random_split
 from torchvision.utils import save_image
 
-from rl_toolbox.policy import VAE, vae_loss
+from rl_toolbox.net.vae import VAE, vae_loss
 from rl_toolbox.util.common import preprocessing_state, TensorDataset
 
 parser = argparse.ArgumentParser(description='Train VAE')
@@ -25,8 +25,8 @@ parser.add_argument('--epochs', type=int, default=10, metavar='N',
                     help='number of epochs to train (default: 10)')
 parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='enables CUDA training')
-parser.add_argument('--seed', type=int, default=1, metavar='S',
-                    help='random seed (default: 1)')
+parser.add_argument('--seed', type=int, default=123, metavar='S',
+                    help='random seed (default: 123)')
 parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                     help='how many batches to wait before logging training status')
 args = parser.parse_args()

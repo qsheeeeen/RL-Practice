@@ -10,11 +10,6 @@ def get_args():
     parser.add_argument('--env-name', type=str, default='CarRacing-v0', metavar='N',
                         help='name of gym environments.')
 
-    parser.add_argument('--load', action='store_true', default=True,
-                        help='load trained weights.')
-    parser.add_argument('--weights-path', type=str, default='./weights/vae_weights.pth', metavar='N',
-                        help='where the weights file is.')
-
     parser.add_argument('--data-path', type=str, default='./data/', metavar='N',
                         help='where the data file is.')
 
@@ -27,8 +22,8 @@ def get_args():
     parser.add_argument('--epochs', type=int, default=10, metavar='N',
                         help='number of epochs to train (default: 10)')
 
-    parser.add_argument('--seed', type=int, default=1, metavar='S',
-                        help='random seed (default: 1)')
+    parser.add_argument('--seed', type=int, default=123, metavar='S',
+                        help='random seed (default: 123)')
 
     return parser.parse_args()
 

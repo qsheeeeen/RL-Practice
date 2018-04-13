@@ -3,11 +3,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Normal
 
-from .common import SmallCNN, SmallRNN
+from .core import Policy
+from ..net.common import SmallCNN, SmallRNN
 from ..util.init import orthogonal_init
 
 
-class CNNPolicy(nn.Module):
+class CNNPolicy(Policy):
     def __init__(self, input_shape, output_shape):
         super(CNNPolicy, self).__init__()
         self.recurrent = False
@@ -39,7 +40,7 @@ class CNNPolicy(nn.Module):
         return mean, std, value
 
 
-class CNNLSTMPolicy(nn.Module):
+class CNNLSTMPolicy(Policy):
     def __init__(self, input_shape, output_shape):
         super(CNNLSTMPolicy, self).__init__()
         self.recurrent = True
@@ -75,11 +76,11 @@ class CNNLSTMPolicy(nn.Module):
         return mean, std, value
 
 
-class MLPPolicy(nn.Module):
+class MLPPolicy(Policy):
     def __init__(self, input_shape, output_shape):
         super(MLPPolicy, self).__init__()
         self.recurrent = False
-        self.pd_fn = Normal
+        self.pd = None
 
         self.pi_fc1 = nn.Linear(input_shape[0], 64)
         self.pi_fc2 = nn.Linear(64, 64)
@@ -101,6 +102,7 @@ class MLPPolicy(nn.Module):
         pi_h2 = F.tanh(self.pi_fc2(pi_h1))
 
         mean = self.mean_fc(pi_h2)
+        # TODO: try tanh
         log_std = self.log_std.expand_as(mean)
         std = torch.exp(log_std)
 
@@ -108,20 +110,26 @@ class MLPPolicy(nn.Module):
         vf_h2 = F.tanh(self.vf_fc2(vf_h1))
         value = self.value_fc(vf_h2)
 
-        return mean, std, value
+        self.pd = Normal(mean, std)
+        action = self.pd.sample()
+
+        return action, value
+
+    def log_prob(self, x):
+        return self.pd.log_prob(x)
 
 
-class MLPLSTMPolicy(nn.Module):  # TODO: Try single rnn layer
+class MLPLSTMPolicy(Policy):  # Note: Try single rnn layer
     def __init__(self, input_shape, output_shape):
         super(MLPLSTMPolicy, self).__init__()
         self.recurrent = True
         self.pd_fn = Normal
 
-        self.pi_rnn = SmallRNN(input_shape[0], 64)
-        self.pi_fc = nn.Linear(64, 64)
+        self.pi_fc = nn.Linear(input_shape[0], 64)
+        self.pi_rnn = SmallRNN(64, 64)
 
-        self.vf_rnn = SmallRNN(input_shape[0], 64)
-        self.vf_fc = nn.Linear(64, 64)
+        self.vf_fc = nn.Linear(input_shape[0], 64)
+        self.vf_rnn = SmallRNN(64, 64)
 
         self.mean_fc = nn.Linear(64, output_shape[0])
         self.log_std = nn.Parameter(torch.zeros(output_shape[0]))
@@ -133,15 +141,15 @@ class MLPLSTMPolicy(nn.Module):  # TODO: Try single rnn layer
         self.cuda()
 
     def forward(self, x):
-        pi_h1 = F.tanh(self.pi_rnn(x))
-        pi_h2 = F.tanh(self.pi_fc(pi_h1))
+        pi_h1 = F.tanh(self.pi_fc(x))
+        pi_h2 = F.tanh(self.pi_rnn(pi_h1))
 
         mean = self.mean_fc(pi_h2)
         log_std = self.log_std.expand_as(mean)
         std = torch.exp(log_std)
 
-        vf_h1 = F.tanh(self.vf_rnn(x))
-        vf_h2 = F.tanh(self.vf_fc(vf_h1))
+        vf_h1 = F.tanh(self.vf_fc(x))
+        vf_h2 = F.tanh(self.vf_rnn(vf_h1))
         value = self.value_fc(vf_h2)
 
         return mean, std, value

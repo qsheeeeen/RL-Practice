@@ -2,7 +2,6 @@ import copy
 
 import torch
 from torch.autograd import Variable
-from torch.distributions import Normal
 from torch.nn.utils import clip_grad_norm
 from torch.optim import Adam, RMSprop
 from torch.utils.data import DataLoader
@@ -60,14 +59,10 @@ class PPOAgent(Agent):
     def act(self, state, reward=0., done=False):
         state_t = preprocessing_state(state)
 
-        mean_v, std_v, value_v = self.policy_old(Variable(state_t.cuda(), volatile=True))
+        action_v, value_v = self.policy_old(Variable(state_t.cuda(), volatile=True))
+        action_t = action_v.data.cpu()
 
         if self.train:
-            m_v = self.policy_old.pd_fn(mean_v, std_v)
-            action_v = m_v.sample()
-
-            action_t = action_v.data.cpu()
-
             value_t = value_v.data.cpu()
             reward_t = torch.zeros_like(value_t) + reward
 
@@ -78,10 +73,7 @@ class PPOAgent(Agent):
                 self._update_policy()
                 self.replay_buffer.clear()
 
-            self.stored = [state_t, value_t, action_t, m_v.log_prob(action_v).data.cpu()]
-
-        else:
-            action_t = mean_v.data.cpu()
+            self.stored = [state_t, value_t, action_t, self.policy_old.log_prob(action_v).data.cpu()]
 
         return torch.clamp(action_t, -self.abs_output_limit, self.abs_output_limit).numpy()[0]
 
@@ -117,9 +109,8 @@ class PPOAgent(Agent):
                 log_probs_old_v = Variable(log_probs_old_t.cuda())
                 values_old_v = Variable(values_old_t.cuda())
 
-                means_v, stds_v, values_v = self.policy(states_v)
-                m_v = Normal(means_v, stds_v)
-                log_probs_v = m_v.log_prob(actions_old_v)
+                _, values_v = self.policy(states_v)
+                log_probs_v = self.policy.log_prob(actions_old_v)
 
                 ratio = torch.exp(log_probs_v - log_probs_old_v)
 
