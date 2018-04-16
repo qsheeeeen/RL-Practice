@@ -1,5 +1,5 @@
 import torch
-from torch.distributions import Distribution, Normal
+from torch.distributions import Distribution, Normal, Categorical
 from torch.utils.data import Dataset
 from torchvision.transforms import ToTensor
 
@@ -37,25 +37,20 @@ class TensorDataset(Dataset):
         return self.tensors[0].size(0)
 
 
-class MixtureNormal(Distribution):  # TODO: Sample. Test.
+class MixtureNormal(Distribution):  # TODO: Test.
     def __init__(self, pi, mean, std):
-        self.pi = pi
+        assert all([tensor.dim() == 3 for tensor in (pi, mean, std)])
+
+        self.pi = pi if pi.dim() > 2 else pi.unsqueeze(0)
         self.mean = mean
         self.std = std
         self.pd = Normal(self.mean, self.std)
+        self.pi_pd = [Categorical(prob) for prob in self.pi]
 
     def sample(self):
-        use_cuda = self.pi.is_cuda
-
-        # shape = None
-        # z = torch.normal(torch.zero(shape), torch.ones(shape))
-        # k = torch.argmax(torch.log(x) + z)
-        #
-        # indices = (np.arange(n_samples), k)
-        # rn = torch.randn(n_samples)
-        # sampled = rn * self.std[indices] + self.meanindices]
-        # return torch.FloatTensor(sample).cuda() if use_cuda else torch.FloatTensor(sample)
-        return
+        raw_sample = self.pd.sample()
+        index = torch.stack([pd.sample() for pd in self.pi_pd]).unsqueeze(-1)
+        return torch.gather(raw_sample, -1, index).squeeze(-1)
 
     def sample_n(self, n):
         raise NotImplementedError
