@@ -37,11 +37,10 @@ class TensorDataset(Dataset):
         return self.tensors[0].size(0)
 
 
-class MixtureNormal(Distribution):  # TODO: Test.
+class MixtureNormal(Distribution):
     def __init__(self, pi, mean, std):
-        assert all([tensor.dim() == 3 for tensor in (pi, mean, std)])
-
-        self.pi = pi if pi.dim() > 2 else pi.unsqueeze(0)
+        assert all([tensor.dim() == 3 for tensor in (pi, mean, std)]), 'Current only support 3 dims.'
+        self.pi = pi
         self.mean = mean
         self.std = std
         self.pd = Normal(self.mean, self.std)
