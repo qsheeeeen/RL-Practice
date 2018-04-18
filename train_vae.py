@@ -13,9 +13,9 @@ from rl_toolbox.net.vae import VAE, vae_loss
 from rl_toolbox.util.common import preprocessing_state, TensorDataset
 
 parser = argparse.ArgumentParser(description='Train VAE')
-parser.add_argument('--data-path', type=str, default='./data/1525.hdf5', metavar='N',
+parser.add_argument('--data-path', type=str, default='./data/5142.hdf5', metavar='N',
                     help='where the hdf5 file is.')
-parser.add_argument('--load', action='store_true', default=True,
+parser.add_argument('--load', action='store_true', default=False,
                     help='load trained weights.')
 parser.add_argument('--load-path', type=str, default='./weights/vae_weights.pth', metavar='N',
                     help='where the weights file is.')
@@ -38,20 +38,27 @@ file = h5py.File(args.data_path, 'r')
 
 data = np.array(file['states'])
 
+file.close()
+
 data_t = torch.cat([preprocessing_state(data) for data in data])
+
+del data
 
 length = len(data_t)
 
-data_set = TensorDataset(data_t, torch.zero(len(data_t)))
+data_set = TensorDataset(data_t, torch.zeros(len(data_t)))
 
 train_dataset, test_dataset = random_split(data_set, (length - 1000, 1000))
 
 train_loader = torch.utils.data.DataLoader(
     train_dataset,
-    batch_size=args.batch_size, shuffle=True)
+    batch_size=args.batch_size,
+    shuffle=True)
+
 test_loader = torch.utils.data.DataLoader(
     test_dataset,
-    batch_size=args.batch_size, shuffle=True)
+    batch_size=args.batch_size,
+    shuffle=True)
 
 model = VAE()
 

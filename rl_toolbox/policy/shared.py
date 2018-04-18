@@ -23,7 +23,7 @@ class CNNPolicy(Policy):
         self.value_head = nn.Linear(size, 1)
 
         self.apply(orthogonal_init([nn.Linear], 'linear'))
-        self.cnn.apply(orthogonal_init([nn.Linear], 'relu'))
+        self.cnn.apply(orthogonal_init([nn.Linear, nn.Conv2d], 'relu'))
 
         self.float()
         self.cuda()
@@ -41,9 +41,6 @@ class CNNPolicy(Policy):
         action = self.pd.sample()
 
         return action, value
-
-    def log_prob(self, x):
-        return self.pd.log_prob(x)
 
 
 class CNNLSTMPolicy(Policy):
@@ -63,7 +60,7 @@ class CNNLSTMPolicy(Policy):
         self.value_head = nn.Linear(size, 1)
 
         self.apply(orthogonal_init([nn.Linear], 'linear'))
-        self.cnn.apply(orthogonal_init([nn.Linear], 'relu'))
+        self.cnn.apply(orthogonal_init([nn.Linear, nn.Conv2d], 'relu'))
         self.rnn.apply(orthogonal_init([nn.Linear], 'tanh'))
 
         self.float()
@@ -84,9 +81,6 @@ class CNNLSTMPolicy(Policy):
         action = self.pd.sample()
 
         return action, value
-
-    def log_prob(self, x):
-        return self.pd.log_prob(x)
 
 
 class MLPPolicy(Policy):
@@ -114,7 +108,6 @@ class MLPPolicy(Policy):
         pi_h1 = F.tanh(self.pi_fc1(x))
         pi_h2 = F.tanh(self.pi_fc2(pi_h1))
 
-        # NOTE: try tanh
         mean = self.mean_head(pi_h2)
         log_std = self.log_std_head.expand_as(mean)
         std = torch.exp(log_std)
@@ -127,9 +120,6 @@ class MLPPolicy(Policy):
         value = self.value_head(vf_h2)
 
         return action, value
-
-    def log_prob(self, x):
-        return self.pd.log_prob(x)
 
 
 class MLPLSTMPolicy(Policy):  # Note: Try single rnn layer
@@ -169,6 +159,3 @@ class MLPLSTMPolicy(Policy):  # Note: Try single rnn layer
         action = self.pd.sample()
 
         return action, value
-
-    def log_prob(self, x):
-        return self.pd.log_prob(x)

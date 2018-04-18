@@ -1,4 +1,6 @@
-1. Get 10000 random sample.
-2. Train VAE. Note: Check out Adversarial Autoencoders.
-3. Train MDN.
-4. Train PPO.
+1. Train CNN policy for 100 episode.
+2. Collect data using trained policy.
+3. Train VAE using collected data.
+4. Train RNN-MDN using collected data.
+4. Convert weights.
+5. Train visual memory Policy.

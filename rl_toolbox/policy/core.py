@@ -6,4 +6,4 @@ class Policy(nn.Module):
         raise NotImplementedError
 
     def log_prob(self, x):
-        raise NotImplementedError
+        return self.pd.log_prob(x)
