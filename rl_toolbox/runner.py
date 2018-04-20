@@ -83,11 +83,11 @@ class Runner(object):
                 reward_history = np.array(reward_history).T
 
             plt.plot(reward_history)
-            plt.title(self.env_name + '-{}-{}process(es)'.format(self.policy.name, num_worker))
+            plt.title(self.env_name + '-{}-{}Process(es)'.format(self.policy.name, num_worker))
             plt.xlabel('episode')
             plt.ylabel('total reward')
             plt.grid(True)
-            plt.savefig('./image/' + self.env_name + '-{}-{}process(es).png'.format(self.policy.name, num_worker))
+            plt.savefig('./image/' + self.env_name + '-{}-{}Process(es).png'.format(self.policy.name, num_worker))
 
     @staticmethod
     def get_env_shape(env_name):

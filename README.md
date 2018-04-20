@@ -1,15 +1,17 @@
 # Reinforcement learning toolbox (Unfinished)
 Some Reinforcement learning algorithms implemented in PyTorch.
 ## 1. Result
+VAE |
+----|
+<img src="image/vae_reconstruction.png"/> |
 
-
-### LunarLanderContinuous
+### 1.1 LunarLanderContinuous
 MLP policy | MLP LSTM policy
 -----------|----------------
-<img src="image/MLP_1p.png" width="300"/> | <img src="image/MLPLSTM_1p.png" width="300"/>
+<img src="image/LunarLanderContinuous-v2-MLPPolicy-1Process(es).png" width="300"/> | <img src="image/LunarLanderContinuous-v2-MLPLSTMPolicy-1Process(es).png" width="300"/>
 
 
-### CarRacing
+### 1.2 CarRacing
 CNN policy | CNN LSTM policy | VisualMemory policy
 -----------|-----------------|--------------------
 <img src="image/MLP_1p.png" width="300"/> |<img src="image/MLP_1p.png" width="300"/> |<img src="image/MLP_1p.png" width="300"/>
