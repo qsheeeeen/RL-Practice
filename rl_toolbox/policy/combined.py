@@ -9,6 +9,7 @@ from ..util.init import orthogonal_init
 class VisualMemoryPolicy(Policy):
     def __init__(self, input_shape, output_shape):
         super(VisualMemoryPolicy, self).__init__()
+        self.name = 'VisualMemoryPolicy'
         self.recurrent = True
         self.pd = None
 
