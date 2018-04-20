@@ -31,14 +31,10 @@ class Runner(object):
         self.load = load
         self.seed = seed
 
-        env = gym.make(env_name)
-        inputs = env.observation_space.shape
-        outputs = env.action_space.shape
-        env.close()
-        del env
-
         torch.manual_seed(self.seed)
         mp.set_start_method('spawn')
+
+        inputs, outputs = self.get_env_shape(env_name)
 
         self.policy = policy_fn(inputs, outputs)
         self.policy.share_memory()
@@ -48,7 +44,7 @@ class Runner(object):
         if self.load:
             self.policy.load_state_dict(torch.load(self.weight_path))
 
-    def run(self, num_episode=1000, num_worker=1, train=True, draw_result=True):
+    def run(self, num_episode=1000, num_worker=1, draw_result=True):
         processes = []
         reward_queue = mp.Queue()
 
@@ -60,7 +56,6 @@ class Runner(object):
                 self.agent_fn,
                 self.policy,
                 num_episode,
-                train,
                 self.data_path,
                 self.save,
                 self.weight_path,
@@ -88,17 +83,24 @@ class Runner(object):
                 reward_history = np.array(reward_history).T
 
             plt.plot(reward_history)
-            plt.title(self.env_name)
+            plt.title(self.env_name + '-{}-{}process(es)'.format(self.policy.name, num_worker))
             plt.xlabel('episode')
             plt.ylabel('total reward')
             plt.grid(True)
-            plt.savefig('./image/' + self.env_name + '-{}-{}p.png'.format(self.policy.name, num_worker))
+            plt.savefig('./image/' + self.env_name + '-{}-{}process(es).png'.format(self.policy.name, num_worker))
 
     @staticmethod
-    def process(env_name, agent_fn, policy, num_episode, train, data_path, save, weight_path, reward_queue, seed):
+    def get_env_shape(env_name):
+        env = gym.make(env_name)
+        inputs = env.observation_space.shape
+        outputs = env.action_space.shape
+        env.close()
+        return inputs, outputs
+
+    @staticmethod
+    def process(env_name, agent_fn, policy, num_episode, data_path, save, weight_path, reward_queue, seed):
         save_interval = 10
 
-        process_name = '{}'.format(os.getpid())
         env = gym.make(env_name)
         env.seed(seed)
         inputs = env.observation_space.shape
@@ -111,7 +113,7 @@ class Runner(object):
         else:
             recoder = None
 
-        agent = agent_fn(policy, train=train)
+        agent = agent_fn(policy)
 
         reward_history = []
         for episode in range(num_episode):

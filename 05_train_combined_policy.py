@@ -3,6 +3,10 @@ from rl_toolbox.agent import PPOAgent
 from rl_toolbox.policy import VisualMemoryPolicy
 
 
+def policy_fn(policy):
+    return PPOAgent(policy, train=True)
+
+
 def main():
     runner = Runner(
         'CarRacing-v0',
@@ -14,7 +18,7 @@ def main():
         load=True,
         weight_path='./weights/')
 
-    runner.run(num_episode=100, num_worker=1, train=True)
+    runner.run(num_episode=100, num_worker=1)
 
 
 if __name__ == '__main__':
