@@ -1,23 +1,24 @@
 # Reinforcement learning toolbox (Unfinished)
 Some Reinforcement learning algorithms implemented in PyTorch.
 ## 1. Result
-## LunarLanderContinuous
-MLP policy
-<img src="image/MLP_1p.png" align="middle" width="300"/>
 
-MLP LSTM policy
-<img src="image/MLPLSTM_1p.png" align="middle" width="300"/>
 
-## CarRacing
-CNN policy
+### LunarLanderContinuous
+MLP policy | MLP LSTM policy
+-----------|----------------
+<img src="image/MLP_1p.png" width="300"/> | <img src="image/MLPLSTM_1p.png" width="300"/>
 
-CNN LSTM policy
 
-VisualMemory policy
+### CarRacing
+CNN policy | CNN LSTM policy | VisualMemory policy
+-----------|-----------------|--------------------
+<img src="image/MLP_1p.png" width="300"/> |<img src="image/MLP_1p.png" width="300"/> |<img src="image/MLP_1p.png" width="300"/>
 
 ## 2. Setup
 Install dependencies according to [requirements.txt](requirements.txt).
 ## 3. Run
+
+Kinda WorldModel:
 
     python3 01_train_cnn_policy.py
     python3 02_collect_data.py
