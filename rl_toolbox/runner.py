@@ -107,7 +107,7 @@ class Runner(object):
         torch.manual_seed(seed)
 
         if data_path is not None:
-            recoder = Recoder(data_path + env_name + '-{}.png'.format(policy.name), inputs, outputs)
+            recoder = Recoder(data_path + env_name + '-{}.hdf5'.format(policy.name), inputs, outputs)
         else:
             recoder = None
 
