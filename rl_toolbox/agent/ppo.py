@@ -16,29 +16,32 @@ class PPOAgent(Agent):
         self.policy_old = policy
         self.train = train
 
-        if not len(kwargs):
-            kwargs = {
-                'abs_output_limit': 1,
-                'horizon': 2048,
-                'lr': 3e-4,
-                'num_epoch': 10,
-                'batch_size': 32,
-                'clip_range': 0.2,
-                'vf_coeff': 1,
-                'discount_factor': 0.99,
-                'gae_parameter': 0.95,
-                'max_grad_norm': 0.5}
+        default_kwargs = {
+            'abs_output_limit': 1,
+            'horizon': 2048,
+            'lr': 3e-4,
+            'num_epoch': 10,
+            'batch_size': 32,
+            'clip_range': 0.2,
+            'vf_coeff': 1,
+            'discount_factor': 0.99,
+            'gae_parameter': 0.95,
+            'max_grad_norm': 0.5}
 
-        self.abs_output_limit = kwargs['abs_output_limit']
-        self.horizon = kwargs['horizon']
-        self.lr = kwargs['lr']
-        self.num_epoch = kwargs['num_epoch']
-        self.batch_size = kwargs['batch_size']
-        self.clip_range = kwargs['clip_range']
-        self.vf_coeff = kwargs['vf_coeff']
-        self.discount_factor = kwargs['discount_factor']
-        self.gae_parameter = kwargs['gae_parameter']
-        self.max_grad_norm = kwargs['max_grad_norm']
+        for kwarg in kwargs:
+            if kwarg not in default_kwargs:
+                raise TypeError('Keyword argument not understood:', kwarg)
+
+        self.abs_output_limit = kwargs.get('abs_output_limit') or default_kwargs.get('abs_output_limit')
+        self.horizon = kwargs.get('horizon') or default_kwargs.get('horizon')
+        self.lr = kwargs.get('lr') or default_kwargs.get('lr')
+        self.num_epoch = kwargs.get('num_epoch') or default_kwargs.get('num_epoch')
+        self.batch_size = kwargs.get('batch_size') or default_kwargs.get('batch_size')
+        self.clip_range = kwargs.get('clip_range') or default_kwargs.get('clip_range')
+        self.vf_coeff = kwargs.get('vf_coeff') or default_kwargs.get('vf_coeff')
+        self.discount_factor = kwargs.get('discount_factor') or default_kwargs.get('discount_factor')
+        self.gae_parameter = kwargs.get('gae_parameter') or default_kwargs.get('gae_parameter')
+        self.max_grad_norm = kwargs.get('max_grad_norm') or default_kwargs.get('max_grad_norm')
 
         if self.train:
             self.policy_old.train()
@@ -98,6 +101,8 @@ class PPOAgent(Agent):
         dataset = TensorDataset(states_t, actions_old_t, advantages_t, values_target_t, log_probs_old_t, values_old_t)
 
         data_loader = DataLoader(dataset, self.batch_size, shuffle=not self.policy.recurrent)
+
+        self.policy.load_state_dict(self.policy_old.state_dict())
 
         for _ in range(self.num_epoch):
             for states_t, actions_old_t, advantages_t, values_target_t, log_probs_old_t, values_old_t in data_loader:
