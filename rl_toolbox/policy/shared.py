@@ -8,9 +8,11 @@ from ..net.common import SmallCNN, SmallRNN
 from ..util.init import orthogonal_init
 
 
+# TODO: How to init weights.
 class CNNPolicy(Policy):
     def __init__(self, input_shape, output_shape):
         super(CNNPolicy, self).__init__()
+        self.name = 'CNNPolicy'
         self.recurrent = False
         self.pd = None
 
@@ -23,7 +25,7 @@ class CNNPolicy(Policy):
         self.value_head = nn.Linear(size, 1)
 
         self.apply(orthogonal_init([nn.Linear], 'linear'))
-        self.cnn.apply(orthogonal_init([nn.Linear, nn.Conv2d], 'relu'))
+        # self.cnn.apply(orthogonal_init([nn.Linear, nn.Conv2d], 'relu'))
 
         self.float()
         self.cuda()
@@ -46,6 +48,7 @@ class CNNPolicy(Policy):
 class CNNLSTMPolicy(Policy):
     def __init__(self, input_shape, output_shape):
         super(CNNLSTMPolicy, self).__init__()
+        self.name = 'CNNLSTMPolicy'
         self.recurrent = True
         self.pd = None
 
@@ -86,6 +89,7 @@ class CNNLSTMPolicy(Policy):
 class MLPPolicy(Policy):
     def __init__(self, input_shape, output_shape):
         super(MLPPolicy, self).__init__()
+        self.name = 'MLPPolicy'
         self.recurrent = False
         self.pd = None
 
@@ -125,6 +129,7 @@ class MLPPolicy(Policy):
 class MLPLSTMPolicy(Policy):  # Note: Try single rnn layer
     def __init__(self, input_shape, output_shape):
         super(MLPLSTMPolicy, self).__init__()
+        self.name = 'MLPLSTMPolicy'
         self.recurrent = True
         self.pd = None
 
