@@ -6,6 +6,7 @@ from rl_toolbox.policy import VisualMemoryPolicy
 
 parser = argparse.ArgumentParser(description='Train VAE')
 
+# TODO: file name.
 parser.add_argument('--vae-path', type=str, default='./weights/vae_weights.pth', metavar='N',
                     help='where the weights file is.')
 parser.add_argument('--mdn-path', type=str, default='./weights/mdn_weights.pth', metavar='N',

@@ -34,15 +34,15 @@ args.cuda = not args.no_cuda and torch.cuda.is_available()
 
 torch.manual_seed(args.seed)
 
-file = h5py.File(args.data_path, 'r')
 
-data = np.array(file['states'])
+def get_data_tensor(file_path):
+    with h5py.File(file_path, 'r') as file:
+        samples = np.array(file['states'])
 
-file.close()
+    return torch.cat([preprocessing_state(sample) for sample in samples])
 
-data_t = torch.cat([preprocessing_state(data) for data in data])
 
-del data
+data_t = get_data_tensor(args.data_path)
 
 length = len(data_t)
 
@@ -107,7 +107,7 @@ def test(epoch):
             comparison = torch.cat([data[:n],
                                     recon_batch.view(args.batch_size, 3, 96, 96)[:n]])
             save_image(comparison.data.cpu(),
-                       'image/reconstruction_' + str(epoch) + '.png', nrow=n)
+                       'image/vae_reconstruction_' + str(epoch) + '.png', nrow=n)
 
     test_loss /= len(test_loader.dataset)
     print('====> Test set loss: {:.4f}'.format(test_loss))

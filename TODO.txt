@@ -1,6 +1,6 @@
 1. Train CNN policy for 100 episode.
 2. Collect data using trained policy.
 3. Train VAE using collected data.
-4. Train RNN-MDN using collected data.
+4. Train RNN-MDN using collected data.(?)
 4. Convert weights.
 5. Train visual memory Policy.

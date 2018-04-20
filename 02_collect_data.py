@@ -12,9 +12,9 @@ def main():
         data_path='./data/',
         save=False,
         load=True,
-        weight_path='./weights/cnn_policy_weights.pth')
+        weight_path='./weights/')
 
-    runner.run(num_episode=1000, num_worker=1, train=False)
+    runner.run(num_episode=500, num_worker=1, train=False)
 
 
 if __name__ == '__main__':
