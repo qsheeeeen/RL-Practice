@@ -4,4 +4,3 @@ gym[box2d]
 numpy
 torch
 torchvision
-visualdl
