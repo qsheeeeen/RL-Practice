@@ -32,7 +32,8 @@ class Runner(object):
         self.seed = seed
 
         torch.manual_seed(self.seed)
-        mp.set_start_method('spawn')
+        if mp.get_start_method() != 'spawn':
+            mp.set_start_method('spawn', True)
 
         inputs, outputs = self.get_env_shape(env_name)
 
@@ -73,16 +74,9 @@ class Runner(object):
             torch.save(self.policy.state_dict(), self.weight_path)
 
         if draw_result:
-            reward_history = []
             while not reward_queue.empty():
-                reward_history.append(reward_queue.get())
+                plt.plot(reward_queue.get())
 
-            if len(reward_history) == 1:
-                reward_history = reward_history[0]
-            else:
-                reward_history = np.array(reward_history).T
-
-            plt.plot(reward_history)
             plt.title(self.env_name + '-{}-{}Process(es)'.format(self.policy.name, num_worker))
             plt.xlabel('episode')
             plt.ylabel('total reward')
@@ -142,7 +136,7 @@ class Runner(object):
                     print('--------------------------------------')
                     break
 
+        reward_queue.put(reward_history)
+
         if recoder is not None:
             recoder.close()
-
-        reward_queue.put(reward_history)
