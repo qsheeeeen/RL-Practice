@@ -47,10 +47,7 @@ class PPOAgent(Agent):
             self.policy_old.train()
             self.policy = copy.deepcopy(self.policy_old)
 
-            if self.policy.recurrent:
-                self.policy_optimizer = RMSprop(self.policy.parameters(), lr=self.lr, eps=1e-5)
-            else:
-                self.policy_optimizer = Adam(self.policy.parameters(), lr=self.lr, eps=1e-5)
+            self.policy_optimizer = Adam(self.policy.parameters(), lr=self.lr, eps=1e-5)
 
             self.replay_buffer = ReplayBuffer(self.horizon)
 
