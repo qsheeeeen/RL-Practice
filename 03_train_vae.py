@@ -13,7 +13,7 @@ from rl_toolbox.net.vae import VAE, vae_loss
 from rl_toolbox.util.common import preprocessing_state, TensorDataset
 
 parser = argparse.ArgumentParser(description='Train VAE')
-parser.add_argument('--data-path', type=str, default='./data/5142.hdf5', metavar='N',
+parser.add_argument('--data-path', type=str, default='./data/CarRacing-v0-CNNPolicy.hdf5', metavar='N',
                     help='where the hdf5 file is.')
 parser.add_argument('--load', action='store_true', default=False,
                     help='load trained weights.')
@@ -21,7 +21,7 @@ parser.add_argument('--load-path', type=str, default='./weights/vae_weights.pth'
                     help='where the weights file is.')
 parser.add_argument('--batch-size', type=int, default=128, metavar='N',
                     help='input batch size for training (default: 128)')
-parser.add_argument('--epochs', type=int, default=10, metavar='N',
+parser.add_argument('--epochs', type=int, default=15, metavar='N',
                     help='number of epochs to train (default: 10)')
 parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='enables CUDA training')
@@ -116,10 +116,11 @@ def test(epoch):
 for epoch in range(1, args.epochs + 1):
     train(epoch)
     test(epoch)
-    torch.save(model.state_dict(), './weights/vae_weights.pth')
     # sample = Variable(torch.randn(64, 20))
     # if args.cuda:
     #     sample = sample.cuda()
     # sample = model.decode(sample).cpu()
     # save_image(sample.data.view(64, 1, 28, 28),
     #            'results/sample_' + str(epoch) + '.png')
+
+torch.save(model.state_dict(), './weights/vae_weights.pth')
