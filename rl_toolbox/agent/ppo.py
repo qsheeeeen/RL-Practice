@@ -3,7 +3,7 @@ import copy
 import torch
 from torch.autograd import Variable
 from torch.nn.utils import clip_grad_norm
-from torch.optim import Adam, RMSprop
+from torch.optim import Adam
 from torch.utils.data import DataLoader
 
 from .core import Agent

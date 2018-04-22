@@ -1,13 +1,13 @@
 from rl_toolbox import Runner
 from rl_toolbox.agent import PPOAgent
-from rl_toolbox.policy import CNNPolicy
+from rl_toolbox.policy import CNNLSTMPolicy
 
 
 def main():
     runner = Runner(
         'CarRacing-v0',
         PPOAgent,
-        CNNPolicy,
+        CNNLSTMPolicy,
         record_data=False,
         data_path=None,
         save=True,
