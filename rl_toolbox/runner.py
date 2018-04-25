@@ -32,6 +32,7 @@ class Runner(object):
         self.seed = seed
 
         torch.manual_seed(self.seed)
+
         if mp.get_start_method() != 'spawn':
             mp.set_start_method('spawn', True)
 
@@ -95,6 +96,8 @@ class Runner(object):
     @staticmethod
     def process(env_name, agent_fn, policy, num_episode, data_path, save, weight_path, reward_queue, seed):
         save_interval = 10
+
+        torch.manual_seed(seed)
 
         env = gym.make(env_name)
         env.seed(seed)
