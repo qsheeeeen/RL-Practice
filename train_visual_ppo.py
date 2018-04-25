@@ -1,17 +1,17 @@
 from rl_toolbox import Runner
 from rl_toolbox.agent import PPOAgent
-from rl_toolbox.policy import MLPLSTMPolicy
+from rl_toolbox.policy import VisualPolicy
 
 
 def main():
     runner = Runner(
-        'LunarLanderContinuous-v2',
+        'CarRacing-v0',
         PPOAgent,
-        MLPLSTMPolicy,
+        VisualPolicy,
         record_data=False,
         data_path=None,
         save=True,
-        load=False,
+        load=True,
         weight_path='./weights/')
 
     runner.run(num_episode=1000, num_worker=1)

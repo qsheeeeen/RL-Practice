@@ -3,10 +3,6 @@ from rl_toolbox.agent import PPOAgent
 from rl_toolbox.policy import VisualMemoryPolicy
 
 
-def policy_fn(policy):
-    return PPOAgent(policy, train=True)
-
-
 def main():
     runner = Runner(
         'CarRacing-v0',

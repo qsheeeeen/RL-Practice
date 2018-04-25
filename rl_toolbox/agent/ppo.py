@@ -1,19 +1,19 @@
 import copy
 
 import torch
-from torch.autograd import Variable
-from torch.nn.utils import clip_grad_norm
+from torch.nn.utils import clip_grad_norm_
 from torch.optim import Adam
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, TensorDataset
 
 from .core import Agent
 from ..util import ReplayBuffer
-from ..util.common import TensorDataset, preprocessing_state
+from ..util.common import preprocessing_state
 
 
 class PPOAgent(Agent):
     def __init__(self, policy, train=True, **kwargs):
-        self.policy_old = policy
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.policy_old = policy.to(self.device)
         self.train = train
 
         default_kwargs = {
@@ -58,80 +58,79 @@ class PPOAgent(Agent):
         torch.backends.cudnn.benchmark = True
 
     def act(self, state, reward=0., done=False):
-        state_t = preprocessing_state(state)
+        state = preprocessing_state(state).to(self.device)
 
-        action_v, value_v = self.policy_old(Variable(state_t.cuda(), volatile=True))
-        action_t = action_v.data.cpu()
+        with torch.no_grad():
+            action, value = self.policy_old(state)
 
         if self.train:
-            value_t = value_v.data.cpu()
-            reward_t = torch.zeros_like(value_t) + reward
+            reward = torch.zeros_like(value) + reward
 
             if self.stored is not None:
-                self.replay_buffer.store(self.stored + [reward_t])
+                self.replay_buffer.store(self.stored + [reward])
 
             if self.replay_buffer.full():
                 self._update_policy()
                 self.replay_buffer.clear()
 
-            self.stored = [state_t, value_t, action_t, self.policy_old.log_prob(action_v).data.cpu()]
+            self.stored = [state.detach(), value.detach(), action.detach(), self.policy_old.log_prob(action).detach()]
 
-        return torch.clamp(action_t, -self.abs_output_limit, self.abs_output_limit).numpy()[0]
+        return torch.clamp(action, -self.abs_output_limit, self.abs_output_limit).to('cpu').numpy()[0]
 
-    def _calculate_advantage(self, rewards_t, values):
-        advantages_t = torch.zeros_like(rewards_t)
-        advantages_t[-1] = rewards_t[-1] - values[-1]
+    def _calculate_advantage(self, rewards, values):
+        advantages = torch.zeros_like(rewards)
+        advantages[-1] = rewards[-1] - values[-1]
 
-        for t in reversed(range(len(rewards_t) - 1)):
-            delta = rewards_t[t] + self.discount_factor * values[t + 1] - values[t]
-            advantages_t[t] = delta + self.discount_factor * self.gae_parameter * advantages_t[t + 1]
+        for t in reversed(range(len(rewards) - 1)):
+            delta = rewards[t] + self.discount_factor * values[t + 1] - values[t]
+            advantages[t] = delta + self.discount_factor * self.gae_parameter * advantages[t + 1]
 
-        return advantages_t
+        return advantages
 
     def _update_policy(self):
-        states_t, values_old_t, actions_old_t, log_probs_old_t, rewards_t = self.replay_buffer.get_all()
+        states, values_old, actions_old, log_probs_old, rewards = self.replay_buffer.get_all()
 
-        advantages_t = self._calculate_advantage(rewards_t, values_old_t)
+        advantages = self._calculate_advantage(rewards, values_old)
 
-        values_target_t = advantages_t + values_old_t
+        values_target = advantages + values_old
 
-        dataset = TensorDataset(states_t, actions_old_t, advantages_t, values_target_t, log_probs_old_t, values_old_t)
+        dataset = TensorDataset(states, actions_old, advantages, values_target, log_probs_old, values_old)
 
         data_loader = DataLoader(dataset, self.batch_size, shuffle=not self.policy.recurrent)
 
         self.policy.load_state_dict(self.policy_old.state_dict())
 
         for _ in range(self.num_epoch):
-            for states_t, actions_old_t, advantages_t, values_target_t, log_probs_old_t, values_old_t in data_loader:
-                advantages_t = (advantages_t - advantages_t.mean()) / (advantages_t.std() + 1e-8)
+            for states, actions_old, advantages, values_target, log_probs_old, values_old in data_loader:
+                advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
 
-                states_v = Variable(states_t.cuda())
-                actions_old_v = Variable(actions_old_t.cuda())
-                advantages_v = Variable(advantages_t.cuda())
-                values_target_v = Variable(values_target_t.cuda())
-                log_probs_old_v = Variable(log_probs_old_t.cuda())
-                values_old_v = Variable(values_old_t.cuda())
+                states = states.to(self.device)
+                actions_old = actions_old.to(self.device)
+                advantages = advantages.to(self.device)
+                values_target = values_target.to(self.device)
+                log_probs_old = log_probs_old.to(self.device)
+                values_old = values_old.to(self.device)
 
-                _, values_v = self.policy(states_v)
-                log_probs_v = self.policy.log_prob(actions_old_v)
+                _, values = self.policy(states)
+                log_probs = self.policy.log_prob(actions_old)
 
-                ratio = torch.exp(log_probs_v - log_probs_old_v)
+                ratio = torch.exp(log_probs - log_probs_old)
 
-                pg_losses1 = advantages_v * ratio
-                pg_losses2 = advantages_v * torch.clamp(ratio, 1.0 - self.clip_range, 1.0 + self.clip_range)
+                pg_losses1 = advantages * ratio
+                pg_losses2 = advantages * torch.clamp(ratio, 1.0 - self.clip_range, 1.0 + self.clip_range)
                 pg_loss = -torch.mean(torch.min(pg_losses1, pg_losses2))
 
-                values_clipped = values_old_v + torch.clamp(values_v - values_old_v, - self.clip_range, self.clip_range)
+                values_clipped = values_old + torch.clamp(values - values_old, - self.clip_range, self.clip_range)
 
-                vf_losses1 = torch.pow((values_v - values_target_v), 2)
-                vf_losses2 = torch.pow((values_clipped - values_target_v), 2)
+                vf_losses1 = torch.pow((values - values_target), 2)
+                vf_losses2 = torch.pow((values_clipped - values_target), 2)
                 vf_loss = torch.mean(torch.max(vf_losses1, vf_losses2))
 
                 total_loss = pg_loss + self.vf_coeff * vf_loss
 
                 self.policy_optimizer.zero_grad()
                 total_loss.backward()
-                clip_grad_norm(self.policy.parameters(), self.max_grad_norm)
+                clip_grad_norm_(self.policy.parameters(), self.max_grad_norm)
                 self.policy_optimizer.step()
 
         self.policy_old.load_state_dict(self.policy.state_dict())

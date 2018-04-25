@@ -27,9 +27,6 @@ class CNNPolicy(Policy):
         self.apply(orthogonal_init([nn.Linear], 'linear'))
         # self.cnn.apply(orthogonal_init([nn.Linear, nn.Conv2d], 'relu'))
 
-        self.float()
-        self.cuda()
-
     def forward(self, x):
         feature = self.cnn(x)
 
@@ -65,9 +62,6 @@ class CNNLSTMPolicy(Policy):
         self.apply(orthogonal_init([nn.Linear], 'linear'))
         self.cnn.apply(orthogonal_init([nn.Linear, nn.Conv2d], 'relu'))
         self.rnn.apply(orthogonal_init([nn.Linear], 'tanh'))
-
-        self.float()
-        self.cuda()
 
     def forward(self, x):
         feature = self.cnn(x)
@@ -105,9 +99,6 @@ class MLPPolicy(Policy):
 
         self.apply(orthogonal_init([nn.Linear], 'tanh'))
 
-        self.float()
-        self.cuda()
-
     def forward(self, x):
         pi_h1 = F.tanh(self.pi_fc1(x))
         pi_h2 = F.tanh(self.pi_fc2(pi_h1))
@@ -144,9 +135,6 @@ class MLPLSTMPolicy(Policy):  # Note: Try single rnn layer
         self.value_head = nn.Linear(64, 1)
 
         self.apply(orthogonal_init([nn.Linear], 'tanh'))
-
-        self.float()
-        self.cuda()
 
     def forward(self, x):
         pi_h1 = F.tanh(self.pi_fc(x))

@@ -3,14 +3,14 @@ from rl_toolbox.agent import PPOAgent
 from rl_toolbox.policy import CNNPolicy
 
 
-def policy_fn(policy):
+def agent_fn(policy):
     return PPOAgent(policy, train=False)
 
 
 def main():
     runner = Runner(
         'CarRacing-v0',
-        policy_fn,
+        agent_fn,
         CNNPolicy,
         record_data=True,
         data_path='./data/',

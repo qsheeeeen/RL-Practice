@@ -14,7 +14,7 @@ def main():
         load=False,
         weight_path='./weights/')
 
-    runner.run(num_episode=1000, num_worker=4)
+    runner.run(num_episode=1000, num_worker=1)
 
 
 if __name__ == '__main__':

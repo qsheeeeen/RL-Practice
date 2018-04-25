@@ -24,7 +24,7 @@ class AdaptiveNoise(object):
 
     def _apply_noise(self, m):
         x = torch.zeros_like(m.weight.data)
-        m.weight.data += init.normal(x, 0, self.std)
+        m.weight.data += init.normal_(x, 0, self.std)
 
         x = torch.zeros_like(m.bias.data)
-        m.bias.data += init.normal(x, 0, self.std)
+        m.bias.data += init.normal_(x, 0, self.std)

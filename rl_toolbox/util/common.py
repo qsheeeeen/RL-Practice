@@ -1,6 +1,5 @@
 import torch
 from torch.distributions import Distribution, Normal, Categorical
-from torch.utils.data import Dataset
 from torchvision.transforms import ToTensor
 
 
@@ -25,33 +24,35 @@ def sequence_to_batch(x):
     return x.squeeze(1)
 
 
-class TensorDataset(Dataset):
-    def __init__(self, *tensors):
-        assert all(tensors[0].size(0) == tensor.size(0) for tensor in tensors)
-        self.tensors = tensors
-
-    def __getitem__(self, index):
-        return tuple(tensor[index] for tensor in self.tensors)
-
-    def __len__(self):
-        return self.tensors[0].size(0)
-
-
 class MixtureNormal(Distribution):
-    def __init__(self, pi, mean, std):
-        assert all([tensor.dim() == 3 for tensor in (pi, mean, std)]), 'Current only support 3 dims.'
+    @property
+    def mean(self):
+        return self.loc
+
+    @property
+    def stddev(self):
+        return self.scale
+
+    @property
+    def variance(self):
+        raise NotImplementedError
+
+    def __init__(self, pi, loc, scale):
+        assert all([tensor.dim() == 3 for tensor in (pi, loc, scale)]), 'Current only support 3 dims.'
+        super(MixtureNormal, self).__init__()
+
         self.pi = pi
-        self.mean = mean
-        self.std = std
+        self.loc = loc
+        self.scale = scale
         self.pd = Normal(self.mean, self.std)
         self.pi_pd = [Categorical(prob) for prob in self.pi]
 
-    def sample(self):
+    def sample(self, sample_shape=torch.Size()):
         raw_sample = self.pd.sample()
         index = torch.stack([pd.sample() for pd in self.pi_pd]).unsqueeze(-1)
         return torch.gather(raw_sample, -1, index).squeeze(-1)
 
-    def sample_n(self, n):
+    def rsample(self, sample_shape=torch.Size()):
         raise NotImplementedError
 
     def log_prob(self, value):
@@ -61,3 +62,16 @@ class MixtureNormal(Distribution):
         weighted_probs = self.pi * probs
         sum_prob = torch.sum(weighted_probs, -1)
         return torch.log(sum_prob)
+
+    def cdf(self, value):
+        raise NotImplementedError
+
+    def icdf(self, value):
+        raise NotImplementedError
+
+    def entropy(self):
+        raise NotImplementedError
+
+    @property
+    def _nature_params(self):
+        pass

@@ -13,6 +13,7 @@ Some Reinforcement learning algorithms implemented in PyTorch.
 | MLP policy | MLP LSTM policy
 |------------|----------------
 | <img src="image/LunarLanderContinuous-v2-MLPPolicy-1Process(es).png" width="300"/> | <img src="image/LunarLanderContinuous-v2-MLPLSTMPolicy-1Process(es).png" width="300"/>
+| <img src="image/LunarLanderContinuous-v2-MLPPolicy-4Process(es).png" width="300"/> | <img src="image/LunarLanderContinuous-v2-MLPLSTMPolicy-4Process(es).png" width="300"/>
 
 ### 1.2 CarRacing
 

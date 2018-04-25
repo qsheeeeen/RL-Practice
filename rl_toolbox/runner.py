@@ -82,6 +82,7 @@ class Runner(object):
             plt.ylabel('total reward')
             plt.grid(True)
             plt.savefig('./image/' + self.env_name + '-{}-{}Process(es).png'.format(self.policy.name, num_worker))
+            plt.close()
 
     @staticmethod
     def get_env_shape(env_name):
@@ -99,8 +100,6 @@ class Runner(object):
         env.seed(seed)
         inputs = env.observation_space.shape
         outputs = env.action_space.shape
-
-        torch.manual_seed(seed)
 
         if data_path is not None:
             recoder = Recoder(data_path + env_name + '-{}.hdf5'.format(policy.name), inputs, outputs)
