@@ -12,8 +12,6 @@ from ..util.init import orthogonal_init
 class CNNPolicy(Policy):
     def __init__(self, input_shape, output_shape):
         super(CNNPolicy, self).__init__()
-        self.name = 'CNNPolicy'
-        self.recurrent = False
         self.pd = None
 
         self.cnn = SmallCNN()
@@ -33,20 +31,25 @@ class CNNPolicy(Policy):
         mean = self.mean_head(feature)
         log_std = self.log_std_head.expand_as(mean)
         std = torch.exp(log_std)
+        self.pd = Normal(mean, std)
+        action = self.pd.sample() if self.training else mean
 
         value = self.value_head(feature)
 
-        self.pd = Normal(mean, std)
-        action = self.pd.sample()
-
         return action, value
+
+    @property
+    def recurrent(self):
+        return False
+
+    @property
+    def name(self):
+        return 'CNNPolicy'
 
 
 class CNNLSTMPolicy(Policy):
     def __init__(self, input_shape, output_shape):
         super(CNNLSTMPolicy, self).__init__()
-        self.name = 'CNNLSTMPolicy'
-        self.recurrent = True
         self.pd = None
 
         self.cnn = SmallCNN()
@@ -69,22 +72,28 @@ class CNNLSTMPolicy(Policy):
         memory = self.rnn(feature)
 
         mean = self.mean_head(memory)
-        value = self.value_head(memory)
-
         log_std = self.log_std_head.expand_as(mean)
         std = torch.exp(log_std)
 
         self.pd = Normal(mean, std)
-        action = self.pd.sample()
+        action = self.pd.sample() if self.training else mean
+
+        value = self.value_head(memory)
 
         return action, value
+
+    @property
+    def recurrent(self):
+        return True
+
+    @property
+    def name(self):
+        return 'CNNLSTMPolicy'
 
 
 class MLPPolicy(Policy):
     def __init__(self, input_shape, output_shape):
         super(MLPPolicy, self).__init__()
-        self.name = 'MLPPolicy'
-        self.recurrent = False
         self.pd = None
 
         self.pi_fc1 = nn.Linear(input_shape[0], 64)
@@ -116,12 +125,18 @@ class MLPPolicy(Policy):
 
         return action, value
 
+    @property
+    def recurrent(self):
+        return False
+
+    @property
+    def name(self):
+        return 'MLPPolicy'
+
 
 class MLPLSTMPolicy(Policy):  # Note: Try single rnn layer
     def __init__(self, input_shape, output_shape):
         super(MLPLSTMPolicy, self).__init__()
-        self.name = 'MLPLSTMPolicy'
-        self.recurrent = True
         self.pd = None
 
         self.pi_fc = nn.Linear(input_shape[0], 64)
@@ -149,6 +164,14 @@ class MLPLSTMPolicy(Policy):  # Note: Try single rnn layer
         value = self.value_head(vf_h2)
 
         self.pd = Normal(mean, std)
-        action = self.pd.sample()
+        action = self.pd.sample() if self.training else mean
 
         return action, value
+
+    @property
+    def recurrent(self):
+        return True
+
+    @property
+    def name(self):
+        return 'MLPLSTMPolicy'

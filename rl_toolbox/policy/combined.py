@@ -11,8 +11,6 @@ from ..util.init import orthogonal_init
 class VisualMemoryPolicy(Policy):
     def __init__(self, input_shape, output_shape):
         super(VisualMemoryPolicy, self).__init__()
-        self.name = 'VisualMemoryPolicy'
-        self.recurrent = True
         self.pd = None
 
         z_size = 128
@@ -42,12 +40,18 @@ class VisualMemoryPolicy(Policy):
 
         return action, value
 
+    @property
+    def recurrent(self):
+        return True
+
+    @property
+    def name(self):
+        return 'VisualMemoryPolicy'
+
 
 class VisualPolicy(Policy):
     def __init__(self, input_shape, output_shape):
         super(VisualPolicy, self).__init__()
-        self.name = 'VisualPolicy'
-        self.recurrent = False
         self.pd = None
 
         z_size = 128
@@ -69,10 +73,17 @@ class VisualPolicy(Policy):
         mean = self.mean_head(feature)
         log_std = self.log_std_head.expand_as(mean)
         std = torch.exp(log_std)
-
-        value = self.value_head(feature)
-
         self.pd = Normal(mean, std)
         action = self.pd.sample()
 
+        value = self.value_head(feature)
+
         return action, value
+
+    @property
+    def recurrent(self):
+        return False
+
+    @property
+    def name(self):
+        return 'VisualPolicy'
