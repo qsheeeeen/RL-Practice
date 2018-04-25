@@ -46,7 +46,7 @@ class VisualMemoryPolicy(Policy):
 class VisualPolicy(Policy):
     def __init__(self, input_shape, output_shape):
         super(VisualPolicy, self).__init__()
-        self.name = 'VisualMemoryPolicy'
+        self.name = 'VisualPolicy'
         self.recurrent = False
         self.pd = None
 
