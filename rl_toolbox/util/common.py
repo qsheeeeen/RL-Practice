@@ -72,6 +72,3 @@ class MixtureNormal(Distribution):
     def entropy(self):
         raise NotImplementedError
 
-    @property
-    def _nature_params(self):
-        pass

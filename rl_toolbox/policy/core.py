@@ -7,3 +7,11 @@ class Policy(nn.Module):
 
     def log_prob(self, x):
         return self.pd.log_prob(x)
+
+    @property
+    def recurrent(self):
+        raise NotImplementedError
+
+    @property
+    def name(self):
+        raise NotImplementedError
