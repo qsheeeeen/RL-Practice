@@ -104,13 +104,6 @@ class PPOAgent(Agent):
             for states, actions_old, advantages, values_target, log_probs_old, values_old in data_loader:
                 advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
 
-                states = states.to(self.device)
-                actions_old = actions_old.to(self.device)
-                advantages = advantages.to(self.device)
-                values_target = values_target.to(self.device)
-                log_probs_old = log_probs_old.to(self.device)
-                values_old = values_old.to(self.device)
-
                 _, values = self.policy(states)
                 log_probs = self.policy.log_prob(actions_old)
 
