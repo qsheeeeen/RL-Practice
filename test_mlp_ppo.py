@@ -28,6 +28,6 @@ def main(recurrent=True, multi_agnet=True):
 
 
 if __name__ == '__main__':
-    for r in (True, False):
-        for n in (True, False):
+    for r in (False, True):
+        for n in (False, True):
             main(r, n)

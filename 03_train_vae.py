@@ -15,7 +15,7 @@ from rl_toolbox.util.common import preprocessing_state
 parser = argparse.ArgumentParser(description='Train VAE')
 parser.add_argument('--batch-size', type=int, default=128, metavar='N',
                     help='input batch size for training (default: 128)')
-parser.add_argument('--epochs', type=int, default=10, metavar='N',
+parser.add_argument('--epochs', type=int, default=15, metavar='N',
                     help='number of epochs to train (default: 10)')
 parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='enables CUDA training')
@@ -36,20 +36,26 @@ device = torch.device("cuda" if args.cuda else "cpu")
 
 
 def get_data_tensor(file_path):
+    print('Open file.')
     with h5py.File(file_path, 'r') as file:
         samples = np.array(file['states'])
 
+    print('Processing data.')
     return torch.cat([preprocessing_state(sample) for sample in samples])
 
 
+print('Load data')
 data_t = get_data_tensor(args.data_path)
 
-length = len(data_t)
+test_length = int(len(data_t) * 0.2)
+train_length = len(data_t) - test_length
 
+print('Make dataset.')
 data_set = TensorDataset(data_t, torch.empty(len(data_t)))
 
-train_dataset, test_dataset = random_split(data_set, (length - 1000, 1000))
+train_dataset, test_dataset = random_split(data_set, (train_length, test_length))
 
+print('Make data loader.')
 train_loader = torch.utils.data.DataLoader(
     train_dataset,
     batch_size=args.batch_size,
@@ -60,6 +66,7 @@ test_loader = torch.utils.data.DataLoader(
     batch_size=args.batch_size,
     shuffle=True)
 
+print('Make model.')
 model = VAE()
 
 # if args.load:

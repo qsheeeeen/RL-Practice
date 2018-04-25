@@ -64,7 +64,7 @@ class PPOAgent(Agent):
             action, value = self.policy_old(state)
 
         if self.train:
-            reward = torch.zeros_like(value) + reward
+            reward = torch.full_like(value, reward)
 
             if self.stored is not None:
                 self.replay_buffer.store(self.stored + [reward])
@@ -77,15 +77,19 @@ class PPOAgent(Agent):
 
         return torch.clamp(action, -self.abs_output_limit, self.abs_output_limit).to('cpu').numpy()[0]
 
-    def _calculate_advantage(self, rewards, values):
-        advantages = torch.zeros_like(rewards)
+    def _calculate_advantage(self, rewards, values, on_cpu=True):
+        if on_cpu:
+            device = torch.device('cpu')
+            rewards, values = rewards.to(device), values.to(device)
+
+        advantages = torch.empty_like(rewards)
         advantages[-1] = rewards[-1] - values[-1]
 
         for t in reversed(range(len(rewards) - 1)):
             delta = rewards[t] + self.discount_factor * values[t + 1] - values[t]
             advantages[t] = delta + self.discount_factor * self.gae_parameter * advantages[t + 1]
 
-        return advantages
+        return advantages.to(self.device)
 
     def _update_policy(self):
         states, values_old, actions_old, log_probs_old, rewards = self.replay_buffer.get_all()
@@ -107,17 +111,17 @@ class PPOAgent(Agent):
                 _, values = self.policy(states)
                 log_probs = self.policy.log_prob(actions_old)
 
-                ratio = torch.exp(log_probs - log_probs_old)
+                ratio = (log_probs - log_probs_old).exp()
 
                 pg_losses1 = advantages * ratio
                 pg_losses2 = advantages * torch.clamp(ratio, 1.0 - self.clip_range, 1.0 + self.clip_range)
-                pg_loss = -torch.mean(torch.min(pg_losses1, pg_losses2))
+                pg_loss = -torch.min(pg_losses1, pg_losses2).mean()
 
                 values_clipped = values_old + torch.clamp(values - values_old, - self.clip_range, self.clip_range)
 
-                vf_losses1 = torch.pow((values - values_target), 2)
-                vf_losses2 = torch.pow((values_clipped - values_target), 2)
-                vf_loss = torch.mean(torch.max(vf_losses1, vf_losses2))
+                vf_losses1 = (values - values_target).pow(2)
+                vf_losses2 = (values_clipped - values_target).pow(2)
+                vf_loss = torch.max(vf_losses1, vf_losses2).mean()
 
                 total_loss = pg_loss + self.vf_coeff * vf_loss
 
