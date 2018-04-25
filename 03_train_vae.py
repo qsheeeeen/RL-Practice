@@ -32,7 +32,7 @@ args.cuda = not args.no_cuda and torch.cuda.is_available()
 
 torch.manual_seed(args.seed)
 
-device = torch.device("cuda" if args.cuda else "cpu")
+device = torch.device('cuda' if args.cuda else 'cpu')
 
 
 def get_data_tensor(file_path):
@@ -67,13 +67,11 @@ test_loader = torch.utils.data.DataLoader(
     shuffle=True)
 
 print('Make model.')
-model = VAE()
+model = VAE().to(device)
 
 # if args.load:
 #     model.load_state_dict(torch.load(args.load_path))
 
-if args.cuda:
-    model.cuda()
 optimizer = optim.Adam(model.parameters(), lr=1e-3)
 
 
