@@ -1,10 +1,11 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.distributions import Normal
 
 from .core import Policy
 from ..net import SmallRNN, MixtureDensityNetwork, VAE
-from ..util.common import MixtureNormal
+from ..util.distributions import MixtureNormal
 from ..util.init import orthogonal_init
 
 
@@ -24,15 +25,17 @@ class VisualMemoryPolicy(Policy):
         for param in self.visual.parameters():
             param.requires_grad = False
 
-        self.value_head.apply(orthogonal_init([nn.Linear], 'tanh'))
+        self.visual.apply(orthogonal_init([nn.Linear, nn.Conv2d], 'relu'))
         self.memory.apply(orthogonal_init([nn.Linear], 'tanh'))
-        self.mdn.apply(orthogonal_init([nn.Linear], 'tanh'))
+        self.mdn.apply(orthogonal_init([nn.Linear], 'linear'))
+        self.value_head.apply(orthogonal_init([nn.Linear], 'tanh'))
 
     def forward(self, x):
         feature, _, _ = self.visual.encode(x)
         memory = self.memory(feature)
 
         pi, mean, std = self.mdn(memory)
+
         self.pd = MixtureNormal(pi, mean, std)
         action = self.pd.sample()
 
@@ -55,8 +58,10 @@ class VisualPolicy(Policy):
         self.pd = None
 
         z_size = 128
+        num_mixture = 5
 
         self.visual = VAE(z_size)
+        self.mdn = MixtureDensityNetwork(z_size, output_shape[0], num_mixture)
 
         self.mean_head = nn.Linear(z_size, output_shape[0])
         self.log_std_head = nn.Parameter(torch.zeros(output_shape[0]))
@@ -67,12 +72,16 @@ class VisualPolicy(Policy):
         for param in self.visual.parameters():
             param.requires_grad = False
 
+        self.visual.apply(orthogonal_init([nn.Linear, nn.Conv2d], 'relu'))
+        self.mdn.apply(orthogonal_init([nn.Linear], 'linear'))
+        self.value_head.apply(orthogonal_init([nn.Linear], 'tanh'))
+
     def forward(self, x):
         feature, _, _ = self.visual.encode(x)
 
-        mean = self.mean_head(feature)
-        log_std = self.log_std_head.expand_as(mean)
-        std = torch.exp(log_std)
+        mean = F.tanh(self.mean_head(feature))
+        std = self.log_std_head.expand_as(mean).exp()
+
         self.pd = Normal(mean, std)
         action = self.pd.sample()
 

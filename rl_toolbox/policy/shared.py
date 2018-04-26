@@ -22,15 +22,17 @@ class CNNPolicy(Policy):
         self.log_std_head = nn.Parameter(torch.zeros(output_shape[0]))
         self.value_head = nn.Linear(size, 1)
 
-        self.apply(orthogonal_init([nn.Linear], 'linear'))
-        # self.cnn.apply(orthogonal_init([nn.Linear, nn.Conv2d], 'relu'))
+        self.cnn.apply(orthogonal_init([nn.Linear, nn.Conv2d], 'relu'))
+        self.rnn.apply(orthogonal_init([nn.LSTM], 'tanh'))
+        self.value_head.apply(orthogonal_init([nn.Linear], 'linear'))
+        self.mean_head.apply(orthogonal_init([nn.Linear], 'tanh'))
 
     def forward(self, x):
         feature = self.cnn(x)
 
-        mean = self.mean_head(feature)
-        log_std = self.log_std_head.expand_as(mean)
-        std = torch.exp(log_std)
+        mean = F.tanh(self.mean_head(feature))
+        std = self.log_std_head.expand_as(mean).exp()
+
         self.pd = Normal(mean, std)
         action = self.pd.sample() if self.training else mean
 
@@ -62,18 +64,18 @@ class CNNLSTMPolicy(Policy):
         self.log_std_head = nn.Parameter(torch.ones(output_shape[0]))
         self.value_head = nn.Linear(size, 1)
 
-        self.apply(orthogonal_init([nn.Linear], 'linear'))
         self.cnn.apply(orthogonal_init([nn.Linear, nn.Conv2d], 'relu'))
-        self.rnn.apply(orthogonal_init([nn.Linear], 'tanh'))
+        self.rnn.apply(orthogonal_init([nn.LSTM], 'tanh'))
+        self.value_head.apply(orthogonal_init([nn.Linear], 'linear'))
+        self.mean_head.apply(orthogonal_init([nn.Linear], 'tanh'))
 
     def forward(self, x):
         feature = self.cnn(x)
 
         memory = self.rnn(feature)
 
-        mean = self.mean_head(memory)
-        log_std = self.log_std_head.expand_as(mean)
-        std = torch.exp(log_std)
+        mean = F.tanh(self.mean_head(memory))
+        std = self.log_std_head.expand_as(mean).exp()
 
         self.pd = Normal(mean, std)
         action = self.pd.sample() if self.training else mean
@@ -107,14 +109,14 @@ class MLPPolicy(Policy):
         self.value_head = nn.Linear(64, 1)
 
         self.apply(orthogonal_init([nn.Linear], 'tanh'))
+        self.value_head.apply(orthogonal_init([nn.Linear], 'linear'))
 
     def forward(self, x):
         pi_h1 = F.tanh(self.pi_fc1(x))
         pi_h2 = F.tanh(self.pi_fc2(pi_h1))
 
-        mean = self.mean_head(pi_h2)
-        log_std = self.log_std_head.expand_as(mean)
-        std = torch.exp(log_std)
+        mean = F.tanh(self.mean_head(pi_h2))
+        std = self.log_std_head.expand_as(mean).exp()
 
         self.pd = Normal(mean, std)
         action = self.pd.sample() if self.training else mean
@@ -134,7 +136,7 @@ class MLPPolicy(Policy):
         return 'MLPPolicy'
 
 
-class MLPLSTMPolicy(Policy):  # Note: Try single rnn layer
+class MLPLSTMPolicy(Policy):
     def __init__(self, input_shape, output_shape):
         super(MLPLSTMPolicy, self).__init__()
         self.pd = None
@@ -150,14 +152,14 @@ class MLPLSTMPolicy(Policy):  # Note: Try single rnn layer
         self.value_head = nn.Linear(64, 1)
 
         self.apply(orthogonal_init([nn.Linear], 'tanh'))
+        self.value_head.apply(orthogonal_init([nn.Linear], 'linear'))
 
     def forward(self, x):
         pi_h1 = F.tanh(self.pi_fc(x))
         pi_h2 = F.tanh(self.pi_rnn(pi_h1))
 
-        mean = self.mean_head(pi_h2)
-        log_std = self.log_std_head.expand_as(mean)
-        std = torch.exp(log_std)
+        mean = F.tanh(self.mean_head(pi_h2))
+        std = self.log_std_head.expand_as(mean).exp()
 
         vf_h1 = F.tanh(self.vf_fc(x))
         vf_h2 = F.tanh(self.vf_rnn(vf_h1))

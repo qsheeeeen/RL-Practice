@@ -1,4 +1,3 @@
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -16,17 +15,16 @@ class MixtureDensityNetwork(nn.Module):
         self.mean_head = nn.Linear(512, output_shape[0] * num_mixture)
 
     def forward(self, x):
-        h1 = F.tanh(self.fc(x))
+        h1 = F.relu(self.fc(x))
 
         pi_h = self.pi_head(h1)
         pi_h = pi_h.view(pi_h.size(0), self.output_shape[0], self.num_mixture)  # TODO: try ConvTranspose2d
         pi = F.softmax(pi_h, -1)
 
-        mean_h = self.mean_head(h1)
+        mean_h = F.tanh(self.mean_head(h1))
         mean = mean_h.view(mean_h.size(0), self.output_shape[0], self.num_mixture)
 
         log_std_h = self.log_std_head(h1)
-        log_std = log_std_h.view(log_std_h.size(0), self.output_shape[0], self.num_mixture)
-        std = torch.exp(log_std)
+        std = log_std_h.view(log_std_h.size(0), self.output_shape[0], self.num_mixture).exp()
 
         return pi, mean, std

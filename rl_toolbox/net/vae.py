@@ -26,20 +26,14 @@ class VAE(nn.Module):
         self.mu_fc = nn.Linear(encoder_output_shape, z_size)
         self.sigma_fc = nn.Linear(encoder_output_shape, z_size)
 
-        self.apply(orthogonal_init([nn.Linear, nn.Conv2d], 'relu'))
-
-        self.float()
-        self.cuda()
+        self.apply(orthogonal_init([nn.Linear, nn.Conv2d, nn.ConvTranspose2d], 'relu'))
 
     def encode(self, x):
         feature = self.encoder(x)
         mu = self.mu_fc(feature)
         sigma = self.sigma_fc(feature)
 
-        if self.training:
-            z = mu + sigma * torch.normal(torch.zeros_like(mu), torch.ones_like(mu))
-        else:
-            z = mu
+        z = mu + sigma * torch.normal(torch.zeros_like(mu), torch.ones_like(mu)) if self.training else mu
 
         return z, mu, sigma
 
