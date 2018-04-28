@@ -13,7 +13,7 @@ from rl_toolbox.net.vae import VAE, vae_loss
 from rl_toolbox.util.common import preprocessing_state
 
 parser = argparse.ArgumentParser(description='Train VAE')
-parser.add_argument('--batch-size', type=int, default=128, metavar='N',
+parser.add_argument('--batch-size', type=int, default=32, metavar='N',
                     help='input batch size for training (default: 128)')
 parser.add_argument('--epochs', type=int, default=15, metavar='N',
                     help='number of epochs to train (default: 10)')
@@ -35,36 +35,39 @@ torch.manual_seed(args.seed)
 device = torch.device('cuda' if args.cuda else 'cpu')
 
 
-def get_data_tensor(file_path):
+def get_data_loader(file_path):
     print('Open file.')
     with h5py.File(file_path, 'r') as file:
         samples = np.array(file['states'])
 
     print('Processing data.')
-    return torch.cat([preprocessing_state(sample) for sample in samples])
+    data_t = torch.cat([preprocessing_state(sample) for sample in samples])
+
+    test_length = int(len(data_t) * 0.2)
+    train_length = len(data_t) - test_length
+
+    print('Make dataset.')
+    data_set = TensorDataset(data_t, torch.empty(len(data_t)))
+
+    train_dataset, test_dataset = random_split(data_set, (train_length, test_length))
+
+    print('Make data loader.')
+    train_loader = torch.utils.data.DataLoader(
+        train_dataset,
+        batch_size=args.batch_size,
+        shuffle=True,
+        pin_memory=True)
+
+    test_loader = torch.utils.data.DataLoader(
+        test_dataset,
+        batch_size=args.batch_size,
+        shuffle=True,
+        pin_memory=True)
+
+    return train_loader, test_loader
 
 
-print('Load data')
-data_t = get_data_tensor(args.data_path)
-
-test_length = int(len(data_t) * 0.2)
-train_length = len(data_t) - test_length
-
-print('Make dataset.')
-data_set = TensorDataset(data_t, torch.empty(len(data_t)))
-
-train_dataset, test_dataset = random_split(data_set, (train_length, test_length))
-
-print('Make data loader.')
-train_loader = torch.utils.data.DataLoader(
-    train_dataset,
-    batch_size=args.batch_size,
-    shuffle=True)
-
-test_loader = torch.utils.data.DataLoader(
-    test_dataset,
-    batch_size=args.batch_size,
-    shuffle=True)
+train_loader, test_loader = get_data_loader(args.data_path)
 
 print('Make model.')
 model = VAE().to(device)
@@ -116,14 +119,13 @@ def test(epoch):
     print('====> Test set loss: {:.4f}'.format(test_loss))
 
 
-for epoch in range(1, args.epochs + 1):
-    train(epoch)
-    test(epoch)
-    # sample = Variable(torch.randn(64, 20))
-    # if args.cuda:
-    #     sample = sample.cuda()
-    # sample = model.decode(sample).cpu()
-    # save_image(sample.data.view(64, 1, 28, 28),
-    #            'results/sample_' + str(epoch) + '.png')
+for e in range(1, args.epochs + 1):
+    train(e)
+    test(e)
+    # with torch.no_grad():
+    #     sample = torch.randn(64, 128).to(device)
+    #     sample = model.decode(sample).cpu()
+    #     save_image(sample,
+    #                'image/vae_sample_' + str(e) + '.png')
 
 torch.save(model.state_dict(), args.weights_path)

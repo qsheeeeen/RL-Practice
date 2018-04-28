@@ -4,7 +4,8 @@ import torch.nn.functional as F
 from torch.distributions import Normal
 
 from .core import Policy
-from ..net.common import SmallCNN, SmallRNN
+from ..net import SmallCNN, SmallRNN, MixtureDensityNetwork
+from ..util.distributions import MixtureNormal
 from ..util.init import orthogonal_init
 
 
@@ -134,6 +135,47 @@ class MLPPolicy(Policy):
     @property
     def name(self):
         return 'MLPPolicy'
+
+
+class MixtureMLPPolicy(Policy):
+    def __init__(self, input_shape, output_shape):
+        super(MixtureMLPPolicy, self).__init__()
+        self.pd = None
+
+        self.pi_fc1 = nn.Linear(input_shape[0], 64)
+        self.pi_fc2 = nn.Linear(64, 64)
+
+        self.vf_fc1 = nn.Linear(input_shape[0], 64)
+        self.vf_fc2 = nn.Linear(64, 64)
+
+        self.mdn = MixtureDensityNetwork((self.pi_fc2.out_features,), output_shape, 3)
+        self.value_head = nn.Linear(64, 1)
+
+        self.apply(orthogonal_init([nn.Linear], 'tanh'))
+        self.value_head.apply(orthogonal_init([nn.Linear], 'linear'))
+
+    def forward(self, x):
+        pi_h1 = F.tanh(self.pi_fc1(x))
+        pi_h2 = F.tanh(self.pi_fc2(pi_h1))
+
+        pi, mean, std = self.mdn(pi_h2)
+
+        self.pd = MixtureNormal(pi, mean, std)
+        action = self.pd.sample() if self.training else mean
+
+        vf_h1 = F.tanh(self.vf_fc1(x))
+        vf_h2 = F.tanh(self.vf_fc2(vf_h1))
+        value = self.value_head(vf_h2)
+
+        return action, value
+
+    @property
+    def recurrent(self):
+        return False
+
+    @property
+    def name(self):
+        return 'MixtureMLPPolicy'
 
 
 class MLPLSTMPolicy(Policy):

@@ -8,8 +8,6 @@ def main():
         'CarRacing-v0',
         PPOAgent,
         VisualPolicy,
-        record_data=False,
-        data_path=None,
         save=True,
         load=True,
         weight_path='./weights/')

@@ -21,6 +21,7 @@ class Runner(object):
             save=True,
             load=False,
             weight_path='./weights/',
+            image_path='./image/',
             seed=123):
         self.env_name = env_name
         self.agent_fn = agent_fn
@@ -29,6 +30,7 @@ class Runner(object):
         self.data_path = data_path
         self.save = save
         self.load = load
+        self.image_path = image_path
         self.seed = seed
 
         torch.manual_seed(self.seed)
@@ -46,9 +48,9 @@ class Runner(object):
         if self.load:
             self.policy.load_state_dict(torch.load(self.weight_path))
 
-    def run(self, num_episode=1000, num_worker=1, draw_result=True):
+    def run(self, agent_kwargs=None, num_episode=1000, num_worker=1, draw_result=True, continue_plot=False):
         processes = []
-        reward_queue = mp.Queue()
+        reward_queue = mp.Queue(num_worker)
 
         for i in range(num_worker):
             time.sleep(i)
@@ -56,6 +58,7 @@ class Runner(object):
             args = (
                 self.env_name,
                 self.agent_fn,
+                agent_kwargs,
                 self.policy,
                 num_episode,
                 self.data_path,
@@ -64,26 +67,32 @@ class Runner(object):
                 reward_queue,
                 self.seed + i)
 
-            p = mp.Process(target=self.process, args=args)
+            p = mp.Process(target=self.work, args=args)
             p.start()
             processes.append(p)
 
+        while not reward_queue.full():
+            pass
+
         for p in processes:
-            p.join()
+            p.join(1)
+            p.terminate()
 
         if self.save:
             torch.save(self.policy.state_dict(), self.weight_path)
 
         if draw_result:
+            print('Draw result.')
             while not reward_queue.empty():
-                plt.plot(reward_queue.get())
+                plt.plot(reward_queue.get_nowait())
 
-            plt.title(self.env_name + '-{}-{}Process(es)'.format(self.policy.name, num_worker))
+            plt.title('{}-{}-{}Process(es)'.format(self.env_name, self.policy.name, num_worker))
             plt.xlabel('episode')
             plt.ylabel('total reward')
             plt.grid(True)
-            plt.savefig('./image/' + self.env_name + '-{}-{}Process(es).png'.format(self.policy.name, num_worker))
-            plt.close()
+            plt.savefig(self.image_path + '{}-{}-{}Process(es).png'.format(self.env_name, self.policy.name, num_worker))
+            if not continue_plot:
+                plt.close()
 
     @staticmethod
     def get_env_shape(env_name):
@@ -94,7 +103,16 @@ class Runner(object):
         return inputs, outputs
 
     @staticmethod
-    def process(env_name, agent_fn, policy, num_episode, data_path, save, weight_path, reward_queue, seed):
+    def work(env_name,
+             agent_fn,
+             agent_kwargs,
+             policy,
+             num_episode,
+             data_path,
+             save,
+             weight_path,
+             reward_queue,
+             seed):
         save_interval = 10
 
         torch.manual_seed(seed)
@@ -108,8 +126,10 @@ class Runner(object):
             recoder = Recoder(data_path + env_name + '-{}.hdf5'.format(policy.name), inputs, outputs)
         else:
             recoder = None
-
-        agent = agent_fn(policy)
+        if agent_kwargs is not None:
+            agent = agent_fn(policy, **agent_kwargs)
+        else:
+            agent = agent_fn(policy)
 
         reward_history = []
         for episode in range(num_episode):
@@ -138,7 +158,11 @@ class Runner(object):
                     print('--------------------------------------')
                     break
 
-        reward_queue.put(reward_history)
+        env.close()
 
         if recoder is not None:
             recoder.close()
+
+        reward_queue.put(reward_history)
+
+        quit()

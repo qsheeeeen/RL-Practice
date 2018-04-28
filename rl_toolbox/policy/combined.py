@@ -1,7 +1,5 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from torch.distributions import Normal
 
 from .core import Policy
 from ..net import SmallRNN, MixtureDensityNetwork, VAE
@@ -31,7 +29,8 @@ class VisualMemoryPolicy(Policy):
         self.value_head.apply(orthogonal_init([nn.Linear], 'tanh'))
 
     def forward(self, x):
-        feature, _, _ = self.visual.encode(x)
+        with torch.no_grad:
+            feature, _, _ = self.visual.encode(x)
         memory = self.memory(feature)
 
         pi, mean, std = self.mdn(memory)
@@ -62,27 +61,23 @@ class VisualPolicy(Policy):
 
         self.visual = VAE(z_size)
         self.mdn = MixtureDensityNetwork(z_size, output_shape[0], num_mixture)
-
-        self.mean_head = nn.Linear(z_size, output_shape[0])
-        self.log_std_head = nn.Parameter(torch.zeros(output_shape[0]))
         self.value_head = nn.Linear(z_size, 1)
-
-        self.apply(orthogonal_init([nn.Linear], 'linear'))
 
         for param in self.visual.parameters():
             param.requires_grad = False
 
         self.visual.apply(orthogonal_init([nn.Linear, nn.Conv2d], 'relu'))
+        self.memory.apply(orthogonal_init([nn.Linear], 'tanh'))
         self.mdn.apply(orthogonal_init([nn.Linear], 'linear'))
         self.value_head.apply(orthogonal_init([nn.Linear], 'tanh'))
 
     def forward(self, x):
-        feature, _, _ = self.visual.encode(x)
+        with torch.no_grad:
+            feature, _, _ = self.visual.encode(x)
 
-        mean = F.tanh(self.mean_head(feature))
-        std = self.log_std_head.expand_as(mean).exp()
+        pi, mean, std = self.mdn(feature)
 
-        self.pd = Normal(mean, std)
+        self.pd = MixtureNormal(pi, mean, std)
         action = self.pd.sample()
 
         value = self.value_head(feature)

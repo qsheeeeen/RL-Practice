@@ -73,9 +73,15 @@ class PPOAgent(Agent):
                 self._update_policy()
                 self.replay_buffer.clear()
 
-            self.stored = [state.detach(), value.detach(), action.detach(), self.policy_old.log_prob(action).detach()]
+            self.stored = [
+                state.detach(),
+                value.detach(),
+                action.detach(),
+                self.policy_old.pd.log_prob(action).detach()]
 
-        return torch.clamp(action, -self.abs_output_limit, self.abs_output_limit).to('cpu').numpy()[0]
+            action = torch.clamp(action, -self.abs_output_limit, self.abs_output_limit)
+
+        return action.to('cpu').numpy()[0]
 
     def _calculate_advantage(self, rewards, values, on_cpu=True):
         if on_cpu:
@@ -109,7 +115,7 @@ class PPOAgent(Agent):
                 advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
 
                 _, values = self.policy(states)
-                log_probs = self.policy.log_prob(actions_old)
+                log_probs = self.policy.pd.log_prob(actions_old)
 
                 ratio = (log_probs - log_probs_old).exp()
 
