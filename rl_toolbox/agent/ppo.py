@@ -11,12 +11,10 @@ from ..util.common import preprocessing_state
 
 
 class PPOAgent(Agent):
-    def __init__(self, policy, train=True, **kwargs):
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.policy_old = policy.to(self.device)
-        self.train = train
-
+    def __init__(self, policy, **kwargs):
         default_kwargs = {
+            'train': True,
+            'use_gpu': False,
             'abs_output_limit': 1,
             'horizon': 2048,
             'lr': 3e-4,
@@ -32,6 +30,8 @@ class PPOAgent(Agent):
             if kwarg not in default_kwargs:
                 raise TypeError('Keyword argument not understood:', kwarg)
 
+        self.train = kwargs.get('train') or default_kwargs.get('train')
+        self.use_gpu = kwargs.get('use_gpu') or default_kwargs.get('use_gpu')
         self.abs_output_limit = kwargs.get('abs_output_limit') or default_kwargs.get('abs_output_limit')
         self.horizon = kwargs.get('horizon') or default_kwargs.get('horizon')
         self.lr = kwargs.get('lr') or default_kwargs.get('lr')
@@ -42,6 +42,9 @@ class PPOAgent(Agent):
         self.discount_factor = kwargs.get('discount_factor') or default_kwargs.get('discount_factor')
         self.gae_parameter = kwargs.get('gae_parameter') or default_kwargs.get('gae_parameter')
         self.max_grad_norm = kwargs.get('max_grad_norm') or default_kwargs.get('max_grad_norm')
+
+        self.device = torch.device('cuda' if torch.cuda.is_available() and self.use_gpu else 'cpu')
+        self.policy_old = policy.to(self.device)
 
         if self.train:
             self.policy_old.train()
@@ -54,8 +57,6 @@ class PPOAgent(Agent):
             self.stored = None
         else:
             self.policy_old.eval()
-
-        torch.backends.cudnn.benchmark = True
 
     def act(self, state, reward=0., done=False):
         state = preprocessing_state(state).to(self.device)
@@ -83,11 +84,7 @@ class PPOAgent(Agent):
 
         return action.to('cpu').numpy()[0]
 
-    def _calculate_advantage(self, rewards, values, on_cpu=True):
-        if on_cpu:
-            device = torch.device('cpu')
-            rewards, values = rewards.to(device), values.to(device)
-
+    def _calculate_advantage(self, rewards, values):
         advantages = torch.empty_like(rewards)
         advantages[-1] = rewards[-1] - values[-1]
 
@@ -95,7 +92,7 @@ class PPOAgent(Agent):
             delta = rewards[t] + self.discount_factor * values[t + 1] - values[t]
             advantages[t] = delta + self.discount_factor * self.gae_parameter * advantages[t + 1]
 
-        return advantages.to(self.device)
+        return advantages
 
     def _update_policy(self):
         states, values_old, actions_old, log_probs_old, rewards = self.replay_buffer.get_all()
@@ -111,10 +108,16 @@ class PPOAgent(Agent):
         self.policy.load_state_dict(self.policy_old.state_dict())
 
         for _ in range(self.num_epoch):
+            i = 0
             for states, actions_old, advantages, values_target, log_probs_old, values_old in data_loader:
+                print('{} Update. {} batch'.format(_, i))
+                i += 1
                 advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
 
-                _, values = self.policy(states)
+                try:
+                    actions, values = self.policy(states)
+                except RuntimeError:
+                    pass
                 log_probs = self.policy.pd.log_prob(actions_old)
 
                 ratio = (log_probs - log_probs_old).exp()
