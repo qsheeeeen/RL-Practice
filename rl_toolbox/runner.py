@@ -1,5 +1,4 @@
 import os
-import time
 
 import gym
 import matplotlib.pyplot as plt
@@ -22,7 +21,7 @@ class Runner(object):
             load=False,
             weight_path='./weights/',
             image_path='./image/',
-            seed=123):
+            seed=1):
         self.env_name = env_name
         self.agent_fn = agent_fn
         self.policy_fn = policy_fn
@@ -48,88 +47,25 @@ class Runner(object):
         if self.load:
             self.policy.load_state_dict(torch.load(self.weight_path))
 
-    def run(self, agent_kwargs=None, num_episode=1000, num_worker=1, draw_result=True, continue_plot=False):
-        processes = []
-        reward_queue = mp.Queue(num_worker)
-
-        for i in range(num_worker):
-            time.sleep(i)
-
-            args = (
-                self.env_name,
-                self.agent_fn,
-                agent_kwargs,
-                self.policy,
-                num_episode,
-                self.data_path,
-                self.save,
-                self.weight_path,
-                reward_queue,
-                self.seed + i)
-
-            p = mp.Process(target=self.work, args=args)
-            p.start()
-            processes.append(p)
-
-        while not reward_queue.full():
-            pass
-
-        for p in processes:
-            p.join(1)
-            p.terminate()
-
-        if self.save:
-            torch.save(self.policy.state_dict(), self.weight_path)
-
-        if draw_result:
-            print('Draw result.')
-            while not reward_queue.empty():
-                plt.plot(reward_queue.get_nowait())
-
-            plt.title('{}-{}-{}Process(es)'.format(self.env_name, self.policy.name, num_worker))
-            plt.xlabel('episode')
-            plt.ylabel('total reward')
-            plt.grid(True)
-            plt.savefig(self.image_path + '{}-{}-{}Process(es).png'.format(self.env_name, self.policy.name, num_worker))
-            if not continue_plot:
-                plt.close()
-
-    @staticmethod
-    def get_env_shape(env_name):
-        env = gym.make(env_name)
-        inputs = env.observation_space.shape
-        outputs = env.action_space.shape
-        env.close()
-        return inputs, outputs
-
-    @staticmethod
-    def work(env_name,
-             agent_fn,
-             agent_kwargs,
-             policy,
-             num_episode,
-             data_path,
-             save,
-             weight_path,
-             reward_queue,
-             seed):
+    def run(self, agent_kwargs=None, num_episode=2000, draw_result=True, continue_plot=False):
         save_interval = 10
 
-        torch.manual_seed(seed)
+        torch.manual_seed(self.seed)
 
-        env = gym.make(env_name)
-        env.seed(seed)
+        env = gym.make(self.env_name)
+        env.seed(self.seed)
         inputs = env.observation_space.shape
         outputs = env.action_space.shape
 
-        if data_path is not None:
-            recoder = Recoder(data_path + env_name + '-{}.hdf5'.format(policy.name), inputs, outputs)
+        if self.data_path is not None:
+            recoder = Recoder(self.data_path + self.env_name + '-{}.hdf5'.format(self.policy.name), inputs, outputs)
         else:
             recoder = None
+
         if agent_kwargs is not None:
-            agent = agent_fn(policy, **agent_kwargs)
+            agent = self.agent_fn(self.policy, **agent_kwargs)
         else:
-            agent = agent_fn(policy)
+            agent = self.agent_fn(self.policy)
 
         reward_history = []
         for episode in range(num_episode):
@@ -152,8 +88,8 @@ class Runner(object):
                     print('- PID:{}'.format(os.getpid()))
                     print('- Done.\tEpisode:{}\tStep:{}'.format(episode, step))
                     print('- Total reward:\t{:.6}'.format(total_reword))
-                    if save and (episode % save_interval == 0):
-                        torch.save(policy.state_dict(), weight_path)
+                    if self.save and ((episode + 1) % save_interval == 0):
+                        torch.save(self.policy.state_dict(), self.weight_path)
                         print('- Weights Saved.')
                     print('--------------------------------------')
                     break
@@ -163,6 +99,25 @@ class Runner(object):
         if recoder is not None:
             recoder.close()
 
-        reward_queue.put(reward_history)
+        if self.save:
+            torch.save(self.policy.state_dict(), self.weight_path)
 
-        quit()
+        if draw_result:
+            print('Draw result.')
+            plt.plot(reward_history)
+
+            plt.title('{}-{}-{}Process(es)'.format(self.env_name, self.policy.name, num_worker))
+            plt.xlabel('episode')
+            plt.ylabel('total reward')
+            plt.grid(True)
+            plt.savefig(self.image_path + '{}-{}-{}Process(es).png'.format(self.env_name, self.policy.name, num_worker))
+            if not continue_plot:
+                plt.close()
+
+    @staticmethod
+    def get_env_shape(env_name):
+        env = gym.make(env_name)
+        inputs = env.observation_space.shape
+        outputs = env.action_space.shape
+        env.close()
+        return inputs, outputs

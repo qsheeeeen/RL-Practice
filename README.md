@@ -13,14 +13,12 @@ Some Reinforcement learning algorithms implemented in PyTorch.
 | MLP policy | MLP LSTM policy
 |------------|----------------
 | <img src="image/LunarLanderContinuous-v2-MLPPolicy-1Process(es).png" width="300"/> | <img src="image/LunarLanderContinuous-v2-MLPLSTMPolicy-1Process(es).png" width="300"/>
-| <img src="image/LunarLanderContinuous-v2-MLPPolicy-4Process(es).png" width="300"/> | <img src="image/LunarLanderContinuous-v2-MLPLSTMPolicy-4Process(es).png" width="300"/>
 
 ### 1.2 CarRacing
 
 | CNN policy | CNN LSTM policy
 |------------|-----------------
 | <img src="image/CarRacing-v0-CNNPolicy-1Process(es).png" width="300"/> | <img src="image/CarRacing-v0-CNNLSTMPolicy-1Process(es).png" width="300"/>
-| <img src="image/CarRacing-v0-CNNPolicy-4Process(es).png" width="300"/> | <img src="image/CarRacing-v0-CNNLSTMPolicy-4Process(es).png" width="300"/>
 
 | Visual policy
 |---------------------
@@ -40,7 +38,7 @@ Install dependencies according to [requirements.txt](requirements.txt).
 Test PPO in LunarLanderContinuous (Example of how to use toolbox)
 
 ```
-    python3 test_ppo.py
+    python3 test_mlp_ppo.py
 ```
 
 Kinda WorldModel:
@@ -50,19 +48,25 @@ Kinda WorldModel:
     python3 02_collect_data.py
     python3 03_train_vae.py
     python3 04_convert_weights.py
-    python3 05_train_combined_policy.py
+    python3 05_train_visual_policy.py
+    python3 06_train_combined_policy.py
 ```
 
-## 4. Learned
+## 4. Lessons Learned
+1. An argument controlled switch between CPU and GPU is necessary.
+
+1. Debug on CPU. It gives better error info. CUDA runtime error makes me :scream:.
+
+1. First test on low dim environment using MLP model. Minimize influences from non-core codes.
+
+1. nan. may be the source of all mysterious bugs.
 
 1. Work or not sometimes depend on seed.
 
-1. CNN poliyc can learn to recovery from over-turning.
+1. CNN policy can learn to recovery from over-turning.
 But to make it happend some tricks are needed.
 First train CNN pilcy with absolute output limited to 0.2 for like 1000 episodes.
 Then gradually release it's full potential to 1.0 for many other 1000 opisodes.
-
-1.
 
 ## 5. TODO
 

@@ -2,6 +2,10 @@ import torch
 from torchvision.transforms import ToTensor
 
 
+def have_nan(tensor):
+    return bool((tensor.float() != tensor.float()).any().item())
+
+
 def preprocessing_state(array):
     transform = ToTensor()
     dim = array.ndim

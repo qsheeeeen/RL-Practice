@@ -12,7 +12,7 @@ def main():
         load=True,
         weight_path='./weights/')
 
-    runner.run(num_episode=1000, num_worker=1)
+    runner.run(num_episode=1000)
 
 
 if __name__ == '__main__':

@@ -1,8 +1,6 @@
 import copy
 
 import torch
-from torch.nn.utils import clip_grad_norm_
-from torch.optim import Adam
 from torch.utils.data import DataLoader, TensorDataset
 
 from .core import Agent
@@ -14,7 +12,7 @@ class PPOAgent(Agent):
     def __init__(self, policy, **kwargs):
         default_kwargs = {
             'train': True,
-            'use_gpu': False,
+            'use_gpu': True,
             'abs_output_limit': 1,
             'horizon': 2048,
             'lr': 3e-4,
@@ -30,8 +28,8 @@ class PPOAgent(Agent):
             if kwarg not in default_kwargs:
                 raise TypeError('Keyword argument not understood:', kwarg)
 
-        self.train = kwargs.get('train') or default_kwargs.get('train')
-        self.use_gpu = kwargs.get('use_gpu') or default_kwargs.get('use_gpu')
+        self.train = kwargs.get('train') if kwargs.get('train') is not None else default_kwargs.get('train')
+        self.use_gpu = kwargs.get('use_gpu') if kwargs.get('use_gpu') is not None else default_kwargs.get('use_gpu')
         self.abs_output_limit = kwargs.get('abs_output_limit') or default_kwargs.get('abs_output_limit')
         self.horizon = kwargs.get('horizon') or default_kwargs.get('horizon')
         self.lr = kwargs.get('lr') or default_kwargs.get('lr')
@@ -43,14 +41,15 @@ class PPOAgent(Agent):
         self.gae_parameter = kwargs.get('gae_parameter') or default_kwargs.get('gae_parameter')
         self.max_grad_norm = kwargs.get('max_grad_norm') or default_kwargs.get('max_grad_norm')
 
-        self.device = torch.device('cuda' if torch.cuda.is_available() and self.use_gpu else 'cpu')
+        self.device = torch.device('cuda' if (torch.cuda.is_available() and self.use_gpu) else 'cpu')
         self.policy_old = policy.to(self.device)
 
         if self.train:
             self.policy_old.train()
             self.policy = copy.deepcopy(self.policy_old)
 
-            self.policy_optimizer = Adam(self.policy.parameters(), lr=self.lr, eps=1e-5)
+            self.policy_optimizer = torch.optim.Adam(self.policy.parameters(), lr=self.lr, eps=1e-5)
+            # self.policy_optimizer = torch.optim.SGD(self.policy.parameters(), lr=self.lr)
 
             self.replay_buffer = ReplayBuffer(self.horizon)
 
@@ -85,7 +84,7 @@ class PPOAgent(Agent):
         return action.to('cpu').numpy()[0]
 
     def _calculate_advantage(self, rewards, values):
-        advantages = torch.empty_like(rewards)
+        advantages = torch.zeros_like(rewards)
         advantages[-1] = rewards[-1] - values[-1]
 
         for t in reversed(range(len(rewards) - 1)):
@@ -114,10 +113,7 @@ class PPOAgent(Agent):
                 i += 1
                 advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
 
-                try:
-                    actions, values = self.policy(states)
-                except RuntimeError:
-                    pass
+                actions, values = self.policy(states)
                 log_probs = self.policy.pd.log_prob(actions_old)
 
                 ratio = (log_probs - log_probs_old).exp()
@@ -134,9 +130,20 @@ class PPOAgent(Agent):
 
                 total_loss = pg_loss + self.vf_coeff * vf_loss
 
+                old_policy = self.policy
+                from ..util.common import have_nan
+                for p in self.policy.parameters():
+                    if have_nan(p):
+                        pass
+
                 self.policy_optimizer.zero_grad()
                 total_loss.backward()
-                clip_grad_norm_(self.policy.parameters(), self.max_grad_norm)
+                torch.nn.utils.clip_grad_norm_(self.policy.parameters(), self.max_grad_norm)
                 self.policy_optimizer.step()
+
+                from ..util.common import have_nan
+                for p in self.policy.parameters():
+                    if have_nan(p):
+                        pass
 
         self.policy_old.load_state_dict(self.policy.state_dict())

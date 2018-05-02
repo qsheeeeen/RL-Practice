@@ -14,7 +14,7 @@ class MixtureDensityNetwork(nn.Module):
 
     def forward(self, x):
         pi_h = self.pi_head(x)
-        pi_h = pi_h.view(pi_h.size(0), self.output_shape[0], self.num_mixture)  # TODO: try ConvTranspose2d
+        pi_h = pi_h.view(pi_h.size(0), self.output_shape[0], self.num_mixture)
         pi = F.softmax(pi_h, -1)
 
         mean_h = self.mean_head(x)

@@ -4,19 +4,19 @@ from rl_toolbox.policy import MLPLSTMPolicy, MixtureMLPPolicy, MLPPolicy
 
 
 def main():
-    for num in (1, 4):
-        for policy_fn in (MLPPolicy, MixtureMLPPolicy, MLPLSTMPolicy):
-            runner = Runner(
-                'LunarLanderContinuous-v2',
-                PPOAgent,
-                policy_fn,
-                record_data=False,
-                data_path=None,
-                save=True,
-                load=False,
-                weight_path='./weights/')
+    for policy_fn in (MixtureMLPPolicy, MLPPolicy, MLPLSTMPolicy):
+        runner = Runner(
+            'LunarLanderContinuous-v2',
+            PPOAgent,
+            policy_fn,
+            record_data=False,
+            data_path=None,
+            save=True,
+            load=False,
+            weight_path='./weights/',
+            seed=2)
 
-            runner.run(num_episode=1000, num_worker=num)
+        runner.run({'use_gpu': False}, num_episode=1000)
 
 
 if __name__ == '__main__':
