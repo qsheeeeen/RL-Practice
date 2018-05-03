@@ -20,8 +20,8 @@ def preprocessing_state(array):
 
 
 def batch_to_sequence(x, length):
-    return x.view(length, -1, x.size(-1)) if x.size(0) > 1 else x.unsqueeze(1)
+    return x.view(-1, length, x.size(-1)) if x.size(0) > 1 else x.unsqueeze(0)
 
 
 def sequence_to_batch(x):
-    return x.view(-1, x.size(-1))
+    return x.contiguous().view(-1, x.size(-1))

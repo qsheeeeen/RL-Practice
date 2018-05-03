@@ -1,10 +1,10 @@
 from rl_toolbox import Runner
 from rl_toolbox.agent import PPOAgent
-from rl_toolbox.policy import MLPLSTMPolicy, MixtureMLPPolicy, MLPPolicy
+from rl_toolbox.policy import MLPLSTMPolicy, MLPPolicy
 
 
 def main():
-    for policy_fn in (MLPLSTMPolicy, MixtureMLPPolicy, MLPPolicy):
+    for policy_fn in (MLPLSTMPolicy, MLPPolicy):
         runner = Runner(
             'LunarLanderContinuous-v2',
             PPOAgent,
@@ -16,7 +16,9 @@ def main():
             weight_path='./weights/',
             seed=123)
 
-        runner.run({'use_gpu': False}, num_episode=1000)
+        runner.run(num_episode=1000)
+
+        # runner.run({'use_gpu': False}, num_episode=1000)  # For debug.
 
 
 if __name__ == '__main__':

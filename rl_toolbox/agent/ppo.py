@@ -28,8 +28,9 @@ class PPOAgent(Agent):
             if kwarg not in default_kwargs:
                 raise TypeError('Keyword argument not understood:', kwarg)
 
-        self.train = kwargs.get('train') if kwargs.get('train') is not None else default_kwargs.get('train')
-        self.use_gpu = kwargs.get('use_gpu') if kwargs.get('use_gpu') is not None else default_kwargs.get('use_gpu')
+        self.train = default_kwargs.get('train') if kwargs.get('train') is None else kwargs.get('train')
+        self.use_gpu = default_kwargs.get('use_gpu') if kwargs.get('use_gpu') is None else kwargs.get('use_gpu')
+
         self.abs_output_limit = kwargs.get('abs_output_limit') or default_kwargs.get('abs_output_limit')
         self.horizon = kwargs.get('horizon') or default_kwargs.get('horizon')
         self.lr = kwargs.get('lr') or default_kwargs.get('lr')
@@ -102,7 +103,6 @@ class PPOAgent(Agent):
 
         dataset = TensorDataset(states, actions_old, advantages, values_target, log_probs_old, values_old)
 
-        # TODO: RNN train.
         data_loader = DataLoader(
             dataset,
             self.batch_size * self.policy.num_steps if self.policy.recurrent else self.batch_size,

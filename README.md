@@ -69,6 +69,9 @@ First train CNN pilcy with absolute output limited to 0.2 for like 1000 episodes
 Then gradually release it's full potential to 1.0 for many other 1000 opisodes.
 
 ## 5. TODO
+Make MDN work.
+
+Make LSTM better(or correct).
 
 [Noisy Networks for Exploration](https://arxiv.org/abs/1706.10295)
 

@@ -193,7 +193,8 @@ class MLPLSTMPolicy(Policy):
         self.log_std_head = nn.Parameter(torch.zeros(output_shape[0]))
         self.value_head = nn.Linear(64, 1)
 
-        # self.apply(orthogonal_init([nn.Linear], 'tanh'))
+        self.pi_fc.apply(orthogonal_init([nn.Linear], 'tanh'))
+        self.vf_fc.apply(orthogonal_init([nn.Linear], 'tanh'))
         self.value_head.apply(orthogonal_init([nn.Linear], 'linear'))
 
     def forward(self, x):
@@ -219,7 +220,7 @@ class MLPLSTMPolicy(Policy):
 
     @property
     def num_steps(self):
-        return 4
+        return 1
 
     @property
     def recurrent(self):

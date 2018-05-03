@@ -45,7 +45,7 @@ class SmallCNNTranspose(nn.Module):
 class SmallRNN(nn.Module):
     def __init__(self, input_size, output_size):
         super(SmallRNN, self).__init__()
-        self.rnn = nn.LSTM(input_size, output_size)
+        self.rnn = nn.LSTM(input_size, output_size, batch_first=True)
 
         self.hidden = None
 

@@ -38,6 +38,9 @@ class Runner(object):
         self.policy = policy_fn(inputs, outputs)
         self.policy.share_memory()
 
+        if not os.path.exists(weight_path):
+            os.mkdir(weight_path)
+
         self.weight_path = weight_path + self.policy.name + '_weights.pth'
 
         if self.load:
@@ -102,11 +105,11 @@ class Runner(object):
             print('Draw result.')
             plt.plot(reward_history)
 
-            plt.title('{}-{}-{}Process(es)'.format(self.env_name, self.policy.name, num_worker))
+            plt.title('{}-{}'.format(self.env_name, self.policy.name))
             plt.xlabel('episode')
             plt.ylabel('total reward')
             plt.grid(True)
-            plt.savefig(self.image_path + '{}-{}-{}Process(es).png'.format(self.env_name, self.policy.name, num_worker))
+            plt.savefig(self.image_path + '{}-{}.png'.format(self.env_name, self.policy.name))
             if not continue_plot:
                 plt.close()
 

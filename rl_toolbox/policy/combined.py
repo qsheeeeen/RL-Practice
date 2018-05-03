@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 
 from .core import Policy
-from ..net import SmallRNN, MixtureDensityNetwork, VAE
 from ..distributions import MixtureNormal
+from ..net import SmallRNN, MixtureDensityNetwork, VAE
 from ..util.init import orthogonal_init
 
 
@@ -41,6 +41,10 @@ class VAELSTMPolicy(Policy):
         value = self.value_head(memory)
 
         return action, value
+
+    @property
+    def num_steps(self):
+        return 1
 
     @property
     def recurrent(self):
@@ -83,6 +87,10 @@ class VAEPolicy(Policy):
         value = self.value_head(feature)
 
         return action, value
+
+    @property
+    def num_steps(self):
+        return 1
 
     @property
     def recurrent(self):
