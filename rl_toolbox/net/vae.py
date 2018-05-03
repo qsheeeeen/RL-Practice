@@ -33,7 +33,7 @@ class VAE(nn.Module):
         mu = self.mu_fc(feature)
         sigma = self.sigma_fc(feature)
 
-        z = mu + sigma * torch.normal(torch.zeros_like(mu), torch.ones_like(mu)) if self.training else mu
+        z = mu + sigma * torch.randn_like(mu) if self.training else mu
 
         return z, mu, sigma
 
