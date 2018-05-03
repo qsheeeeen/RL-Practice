@@ -4,7 +4,7 @@ from rl_toolbox.policy import MLPLSTMPolicy, MixtureMLPPolicy, MLPPolicy
 
 
 def main():
-    for policy_fn in (MixtureMLPPolicy, MLPPolicy, MLPLSTMPolicy):
+    for policy_fn in (MLPLSTMPolicy, MixtureMLPPolicy, MLPPolicy):
         runner = Runner(
             'LunarLanderContinuous-v2',
             PPOAgent,
@@ -14,7 +14,7 @@ def main():
             save=True,
             load=False,
             weight_path='./weights/',
-            seed=2)
+            seed=123)
 
         runner.run({'use_gpu': False}, num_episode=1000)
 

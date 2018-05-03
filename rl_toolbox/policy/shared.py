@@ -4,8 +4,9 @@ import torch.nn.functional as F
 from torch.distributions import Normal
 
 from .core import Policy
+from ..distributions import MixtureNormal
 from ..net import SmallCNN, SmallRNN, MixtureDensityNetwork
-from ..util.distributions import MixtureNormal
+from ..util.common import batch_to_sequence, sequence_to_batch
 from ..util.init import orthogonal_init
 
 
@@ -192,25 +193,33 @@ class MLPLSTMPolicy(Policy):
         self.log_std_head = nn.Parameter(torch.zeros(output_shape[0]))
         self.value_head = nn.Linear(64, 1)
 
-        # TODO: Init maybe wrong.
-        self.apply(orthogonal_init([nn.Linear], 'tanh'))
+        # self.apply(orthogonal_init([nn.Linear], 'tanh'))
         self.value_head.apply(orthogonal_init([nn.Linear], 'linear'))
 
     def forward(self, x):
         pi_h1 = F.tanh(self.pi_fc(x))
-        pi_h2 = F.tanh(self.pi_rnn(pi_h1))
+        pi_h1 = batch_to_sequence(pi_h1, self.num_steps)
+        pi_h2 = sequence_to_batch(self.pi_rnn(pi_h1))
+        pi_h2 = F.tanh(pi_h2)
 
         mean = F.tanh(self.mean_head(pi_h2))
         std = self.log_std_head.expand_as(mean).exp()
 
         vf_h1 = F.tanh(self.vf_fc(x))
-        vf_h2 = F.tanh(self.vf_rnn(vf_h1))
+        vf_h1 = batch_to_sequence(vf_h1, self.num_steps)
+        vf_h2 = sequence_to_batch(self.vf_rnn(vf_h1))
+        vf_h2 = F.tanh(vf_h2)
+
         value = self.value_head(vf_h2)
 
         self.pd = Normal(mean, std)
         action = self.pd.sample() if self.training else mean
 
         return action, value
+
+    @property
+    def num_steps(self):
+        return 4
 
     @property
     def recurrent(self):

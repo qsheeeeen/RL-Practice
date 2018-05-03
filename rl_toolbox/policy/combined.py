@@ -3,7 +3,7 @@ import torch.nn as nn
 
 from .core import Policy
 from ..net import SmallRNN, MixtureDensityNetwork, VAE
-from ..util.distributions import MixtureNormal
+from ..distributions import MixtureNormal
 from ..util.init import orthogonal_init
 
 

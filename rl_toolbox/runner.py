@@ -4,7 +4,6 @@ import gym
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-import torch.multiprocessing as mp
 
 from .util import Recoder
 
@@ -33,9 +32,6 @@ class Runner(object):
         self.seed = seed
 
         torch.manual_seed(self.seed)
-
-        if mp.get_start_method() != 'spawn':
-            mp.set_start_method('spawn', True)
 
         inputs, outputs = self.get_env_shape(env_name)
 

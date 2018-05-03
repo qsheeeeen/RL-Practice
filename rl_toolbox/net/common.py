@@ -1,8 +1,6 @@
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ..util.common import batch_to_sequence, sequence_to_batch
-
 
 class SmallCNN(nn.Module):
     def __init__(self):
@@ -52,11 +50,11 @@ class SmallRNN(nn.Module):
         self.hidden = None
 
     def forward(self, x):
-        x = batch_to_sequence(x)
-
-        if self.hidden is not None:
+        if self.hidden is None:
+            out, self.hidden = self.rnn(x)
+        else:
             c, h = self.hidden
             self.hidden = c.detach(), h.detach()
+            out, self.hidden = self.rnn(x, self.hidden)
 
-        out, self.hidden = self.rnn(x) if self.hidden is None else self.rnn(x, self.hidden)
-        return sequence_to_batch(out)
+        return out

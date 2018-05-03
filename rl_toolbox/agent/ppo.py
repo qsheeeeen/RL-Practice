@@ -47,7 +47,7 @@ class PPOAgent(Agent):
         if self.train:
             self.policy_old.train()
             self.policy = copy.deepcopy(self.policy_old)
-
+            # , amsgrad=True
             self.policy_optimizer = torch.optim.Adam(self.policy.parameters(), lr=self.lr, eps=1e-5)
             # self.policy_optimizer = torch.optim.SGD(self.policy.parameters(), lr=self.lr)
 
@@ -102,9 +102,11 @@ class PPOAgent(Agent):
 
         dataset = TensorDataset(states, actions_old, advantages, values_target, log_probs_old, values_old)
 
-        data_loader = DataLoader(dataset, self.batch_size, shuffle=not self.policy.recurrent)
-
-        self.policy.load_state_dict(self.policy_old.state_dict())
+        # TODO: RNN train.
+        data_loader = DataLoader(
+            dataset,
+            self.batch_size * self.policy.num_steps if self.policy.recurrent else self.batch_size,
+            shuffle=not self.policy.recurrent)
 
         for _ in range(self.num_epoch):
             i = 0

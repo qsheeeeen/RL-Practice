@@ -19,9 +19,9 @@ def preprocessing_state(array):
     return tensor.unsqueeze(0)
 
 
-def batch_to_sequence(x):
-    return x.unsqueeze(1)
+def batch_to_sequence(x, length):
+    return x.view(length, -1, x.size(-1)) if x.size(0) > 1 else x.unsqueeze(1)
 
 
 def sequence_to_batch(x):
-    return x.squeeze(1)
+    return x.view(-1, x.size(-1))
