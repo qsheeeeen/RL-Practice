@@ -1,6 +1,6 @@
-# (Unfinished)
+# Reinforcement Learning Practice(Unfinished)
 
-Some Reinforcement learning algorithms implemented in PyTorch.
+Try to implement some RL related algorithm in PyTorch.
 
 ## 1. Result
 

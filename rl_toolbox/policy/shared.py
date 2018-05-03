@@ -9,7 +9,6 @@ from ..util.distributions import MixtureNormal
 from ..util.init import orthogonal_init
 
 
-# TODO: How to init weights.
 class CNNPolicy(Policy):
     def __init__(self, input_shape, output_shape):
         super(CNNPolicy, self).__init__()
@@ -193,6 +192,7 @@ class MLPLSTMPolicy(Policy):
         self.log_std_head = nn.Parameter(torch.zeros(output_shape[0]))
         self.value_head = nn.Linear(64, 1)
 
+        # TODO: Init maybe wrong.
         self.apply(orthogonal_init([nn.Linear], 'tanh'))
         self.value_head.apply(orthogonal_init([nn.Linear], 'linear'))
 

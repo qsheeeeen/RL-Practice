@@ -7,9 +7,9 @@ from ..util.distributions import MixtureNormal
 from ..util.init import orthogonal_init
 
 
-class VisualMemoryPolicy(Policy):
+class VAELSTMPolicy(Policy):
     def __init__(self, input_shape, output_shape):
-        super(VisualMemoryPolicy, self).__init__()
+        super(VAELSTMPolicy, self).__init__()
         self.pd = None
 
         z_size = 128
@@ -48,12 +48,12 @@ class VisualMemoryPolicy(Policy):
 
     @property
     def name(self):
-        return 'VisualMemoryPolicy'
+        return 'VAELSTMPolicy'
 
 
-class VisualPolicy(Policy):
+class VAEPolicy(Policy):
     def __init__(self, input_shape, output_shape):
-        super(VisualPolicy, self).__init__()
+        super(VAEPolicy, self).__init__()
         self.pd = None
 
         z_size = 128
@@ -90,4 +90,4 @@ class VisualPolicy(Policy):
 
     @property
     def name(self):
-        return 'VisualPolicy'
+        return 'VAEPolicy'
