@@ -69,9 +69,6 @@ class VAEPolicy(Policy):
         self.log_std_head = nn.Parameter(torch.zeros(output_shape[0]))
         self.value_head = nn.Linear(z_size, 1)
 
-        self.value_head.apply(orthogonal_init([nn.Linear], 'linear'))
-        self.mean_head.apply(orthogonal_init([nn.Linear], 'tanh'))
-
     def forward(self, x):
         with torch.no_grad():
             feature, _, _ = self.visual.encode(x)
@@ -107,9 +104,6 @@ class CNNPolicy(Policy):
         self.mean_head = nn.Linear(size, output_shape[0])
         self.log_std_head = nn.Parameter(torch.zeros(output_shape[0]))
         self.value_head = nn.Linear(size, 1)
-
-        self.value_head.apply(orthogonal_init([nn.Linear], 'linear'))
-        self.mean_head.apply(orthogonal_init([nn.Linear], 'tanh'))
 
     def forward(self, x):
         feature = self.cnn(x)

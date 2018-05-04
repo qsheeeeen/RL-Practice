@@ -48,9 +48,7 @@ class PPOAgent(Agent):
         if self.train:
             self.policy_old.train()
             self.policy = copy.deepcopy(self.policy_old)
-            # , amsgrad=True
             self.policy_optimizer = torch.optim.Adam(self.policy.parameters(), lr=self.lr, eps=1e-5)
-            # self.policy_optimizer = torch.optim.SGD(self.policy.parameters(), lr=self.lr)
 
             self.replay_buffer = ReplayBuffer(self.horizon)
 
@@ -109,10 +107,7 @@ class PPOAgent(Agent):
             shuffle=not self.policy.recurrent)
 
         for _ in range(self.num_epoch):
-            i = 0
             for states, actions_old, advantages, values_target, log_probs_old, values_old in data_loader:
-                print('{} Update. {} batch'.format(_, i))
-                i += 1
                 advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
 
                 actions, values = self.policy(states)
@@ -132,20 +127,9 @@ class PPOAgent(Agent):
 
                 total_loss = pg_loss + self.vf_coeff * vf_loss
 
-                old_policy = self.policy
-                from ..util.common import have_nan
-                for p in self.policy.parameters():
-                    if have_nan(p):
-                        pass
-
                 self.policy_optimizer.zero_grad()
                 total_loss.backward()
                 torch.nn.utils.clip_grad_norm_(self.policy.parameters(), self.max_grad_norm)
                 self.policy_optimizer.step()
-
-                from ..util.common import have_nan
-                for p in self.policy.parameters():
-                    if have_nan(p):
-                        pass
 
         self.policy_old.load_state_dict(self.policy.state_dict())
