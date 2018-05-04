@@ -5,9 +5,96 @@ from torch.distributions import Normal
 
 from .core import Policy
 from ..distributions import MixtureNormal
-from ..net import SmallCNN, SmallRNN, MixtureDensityNetwork
+from ..net import SmallCNN, SmallRNN, MixtureDensityNetwork, VAE
 from ..util.common import batch_to_sequence, sequence_to_batch
 from ..util.init import orthogonal_init
+
+
+class VAELSTMPolicy(Policy):
+    def __init__(self, input_shape, output_shape):
+        super(VAELSTMPolicy, self).__init__()
+        self.pd = None
+
+        z_size = 128
+
+        self.visual = VAE(z_size)
+
+        self.mean_head = nn.Linear(z_size, output_shape[0])
+        self.log_std_head = nn.Parameter(torch.zeros(output_shape[0]))
+        self.value_head = nn.Linear(z_size, 1)
+
+        for param in self.visual.parameters():
+            param.requires_grad = False
+
+        self.visual.apply(orthogonal_init([nn.Linear, nn.Conv2d], 'relu'))
+        self.value_head.apply(orthogonal_init([nn.Linear], 'linear'))
+        self.mean_head.apply(orthogonal_init([nn.Linear], 'tanh'))
+
+    def forward(self, x):
+        with torch.no_grad:
+            feature, _, _ = self.visual.encode(x)
+
+        mean = F.tanh(self.mean_head(feature))
+        std = self.log_std_head.expand_as(mean).exp()
+
+        self.pd = Normal(mean, std)
+        action = self.pd.sample() if self.training else mean
+
+        value = self.value_head(feature)
+
+        return action, value
+
+    @property
+    def num_steps(self):
+        return 1
+
+    @property
+    def recurrent(self):
+        return True
+
+    @property
+    def name(self):
+        return 'VAELSTMPolicy'
+
+
+class VAEPolicy(Policy):
+    def __init__(self, input_shape, output_shape):
+        super(VAEPolicy, self).__init__()
+        self.pd = None
+
+        z_size = 128
+
+        self.visual = VAE(z_size)
+
+        self.mean_head = nn.Linear(z_size, output_shape[0])
+        self.log_std_head = nn.Parameter(torch.zeros(output_shape[0]))
+        self.value_head = nn.Linear(z_size, 1)
+
+        self.visual.apply(orthogonal_init([nn.Linear, nn.Conv2d], 'relu'))
+        self.value_head.apply(orthogonal_init([nn.Linear], 'linear'))
+        self.mean_head.apply(orthogonal_init([nn.Linear], 'tanh'))
+
+    def forward(self, x):
+        with torch.no_grad():
+            feature, _, _ = self.visual.encode(x)
+
+        mean = F.tanh(self.mean_head(feature))
+        std = self.log_std_head.expand_as(mean).exp()
+
+        self.pd = Normal(mean, std)
+        action = self.pd.sample() if self.training else mean
+
+        value = self.value_head(feature)
+
+        return action, value
+
+    @property
+    def recurrent(self):
+        return False
+
+    @property
+    def name(self):
+        return 'VAEPolicy'
 
 
 class CNNPolicy(Policy):
@@ -24,7 +111,6 @@ class CNNPolicy(Policy):
         self.value_head = nn.Linear(size, 1)
 
         self.cnn.apply(orthogonal_init([nn.Linear, nn.Conv2d], 'relu'))
-        self.rnn.apply(orthogonal_init([nn.LSTM], 'tanh'))
         self.value_head.apply(orthogonal_init([nn.Linear], 'linear'))
         self.mean_head.apply(orthogonal_init([nn.Linear], 'tanh'))
 

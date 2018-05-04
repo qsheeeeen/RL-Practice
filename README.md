@@ -41,8 +41,6 @@ Test PPO in LunarLanderContinuous (Example of how to use toolbox)
     python3 test_mlp_ppo.py
 ```
 
-Kinda WorldModel:
-
 ```
     python3 01_train_cnn_policy.py
     python3 02_collect_data.py

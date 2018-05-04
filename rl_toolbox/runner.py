@@ -46,7 +46,7 @@ class Runner(object):
         if self.load:
             self.policy.load_state_dict(torch.load(self.weight_path))
 
-    def run(self, agent_kwargs=None, num_episode=2000, draw_result=True, continue_plot=False):
+    def run(self, agent_kwargs=None, num_episode=1000, draw_result=True, continue_plot=False):
         save_interval = 10
 
         torch.manual_seed(self.seed)

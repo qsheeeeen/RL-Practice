@@ -4,15 +4,18 @@ from rl_toolbox.policy import VAEPolicy, VAELSTMPolicy
 
 
 def main():
-    runner = Runner(
-        'CarRacing-v0',
-        PPOAgent,
-        VAEPolicy,
-        save=True,
-        load=True,
-        weight_path='./weights/')
+    for i in range(2, 12, 2):
+        runner = Runner(
+            'CarRacing-v0',
+            PPOAgent,
+            VAEPolicy,
+            record_data=False,
+            data_path=None,
+            save=True,
+            load=(i > 2),
+            weight_path='./weights/')
 
-    runner.run()
+        runner.run({'abs_output_limit': i / 10}, num_episode=500, continue_plot=(i < 12))
 
     runner = Runner(
         'CarRacing-v0',
