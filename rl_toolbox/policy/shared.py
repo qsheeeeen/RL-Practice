@@ -26,7 +26,6 @@ class VAELSTMPolicy(Policy):
         for param in self.visual.parameters():
             param.requires_grad = False
 
-        self.visual.apply(orthogonal_init([nn.Linear, nn.Conv2d], 'relu'))
         self.value_head.apply(orthogonal_init([nn.Linear], 'linear'))
         self.mean_head.apply(orthogonal_init([nn.Linear], 'tanh'))
 
@@ -70,7 +69,6 @@ class VAEPolicy(Policy):
         self.log_std_head = nn.Parameter(torch.zeros(output_shape[0]))
         self.value_head = nn.Linear(z_size, 1)
 
-        self.visual.apply(orthogonal_init([nn.Linear, nn.Conv2d], 'relu'))
         self.value_head.apply(orthogonal_init([nn.Linear], 'linear'))
         self.mean_head.apply(orthogonal_init([nn.Linear], 'tanh'))
 
@@ -110,7 +108,6 @@ class CNNPolicy(Policy):
         self.log_std_head = nn.Parameter(torch.zeros(output_shape[0]))
         self.value_head = nn.Linear(size, 1)
 
-        self.cnn.apply(orthogonal_init([nn.Linear, nn.Conv2d], 'relu'))
         self.value_head.apply(orthogonal_init([nn.Linear], 'linear'))
         self.mean_head.apply(orthogonal_init([nn.Linear], 'tanh'))
 
@@ -151,8 +148,6 @@ class CNNLSTMPolicy(Policy):
         self.log_std_head = nn.Parameter(torch.ones(output_shape[0]))
         self.value_head = nn.Linear(size, 1)
 
-        self.cnn.apply(orthogonal_init([nn.Linear, nn.Conv2d], 'relu'))
-        self.rnn.apply(orthogonal_init([nn.LSTM], 'tanh'))
         self.value_head.apply(orthogonal_init([nn.Linear], 'linear'))
         self.mean_head.apply(orthogonal_init([nn.Linear], 'tanh'))
 
