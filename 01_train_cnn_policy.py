@@ -15,7 +15,7 @@ def main():
             load=(i > 2),
             weight_path='./weights/')
 
-        runner.run({'abs_output_limit': i / 10}, num_episode=500, continue_plot=(i < 12))
+        runner.run(abs_output_limit=[1, i / 10, 1], num_episode=i * 100, continue_plot=(i < 12))
 
     runner = Runner(
         'CarRacing-v0',

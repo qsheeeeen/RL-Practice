@@ -4,7 +4,7 @@ from rl_toolbox.policy import MLPLSTMPolicy, MLPPolicy
 
 
 def main():
-    for policy_fn in (MLPLSTMPolicy, MLPPolicy):
+    for policy_fn in (MLPPolicy, MLPLSTMPolicy):
         runner = Runner(
             'LunarLanderContinuous-v2',
             PPOAgent,

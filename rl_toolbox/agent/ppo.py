@@ -13,11 +13,10 @@ class PPOAgent(Agent):
         default_kwargs = {
             'train': True,
             'use_gpu': True,
-            'abs_output_limit': 1,
             'horizon': 2048,
             'lr': 3e-4,
             'num_epoch': 10,
-            'batch_size': 32,
+            'batch_size': 64,
             'clip_range': 0.2,
             'vf_coeff': 1,
             'discount_factor': 0.99,
@@ -31,7 +30,6 @@ class PPOAgent(Agent):
         self.train = default_kwargs.get('train') if kwargs.get('train') is None else kwargs.get('train')
         self.use_gpu = default_kwargs.get('use_gpu') if kwargs.get('use_gpu') is None else kwargs.get('use_gpu')
 
-        self.abs_output_limit = kwargs.get('abs_output_limit') or default_kwargs.get('abs_output_limit')
         self.horizon = kwargs.get('horizon') or default_kwargs.get('horizon')
         self.lr = kwargs.get('lr') or default_kwargs.get('lr')
         self.num_epoch = kwargs.get('num_epoch') or default_kwargs.get('num_epoch')
@@ -78,7 +76,7 @@ class PPOAgent(Agent):
                 action.detach(),
                 self.policy_old.pd.log_prob(action).detach()]
 
-        return torch.clamp(action, -self.abs_output_limit, self.abs_output_limit).to('cpu').squeeze(0).numpy()
+        return action.to('cpu').squeeze(0).numpy()
 
     def _calculate_advantage(self, rewards, values):
         advantages = torch.zeros_like(rewards)

@@ -1,1 +1,1 @@
-from .shared import CNNPolicy, CNNLSTMPolicy, MLPPolicy, MLPLSTMPolicy, MixtureMLPPolicy, VAEPolicy, VAELSTMPolicy
+from .shared import CNNPolicy, CNNLSTMPolicy, MLPPolicy, MLPLSTMPolicy, VAEPolicy, VAELSTMPolicy

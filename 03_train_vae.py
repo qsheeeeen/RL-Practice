@@ -13,7 +13,7 @@ from rl_toolbox.net.vae import VAE, vae_loss
 from rl_toolbox.util.common import preprocessing_state
 
 parser = argparse.ArgumentParser(description='Train VAE')
-parser.add_argument('--batch-size', type=int, default=32, metavar='N',
+parser.add_argument('--batch-size', type=int, default=128, metavar='N',
                     help='input batch size for training (default: 128)')
 parser.add_argument('--epochs', type=int, default=15, metavar='N',
                     help='number of epochs to train (default: 10)')

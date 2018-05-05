@@ -46,8 +46,9 @@ class Runner(object):
         if self.load:
             self.policy.load_state_dict(torch.load(self.weight_path))
 
-    def run(self, agent_kwargs=None, num_episode=1000, draw_result=True, continue_plot=False):
+    def run(self, agent_kwargs=None, num_episode=1000, abs_output_limit=1, draw_result=True, continue_plot=False):
         save_interval = 10
+        abs_output_limit = np.array(abs_output_limit)
 
         torch.manual_seed(self.seed)
 
@@ -71,6 +72,7 @@ class Runner(object):
             ob = env.reset()
             env.render()
             action = agent.act(np.copy(ob))
+            action = np.clip(action, -abs_output_limit, abs_output_limit)
             total_reword = 0
 
             for step in range(1000):
@@ -78,6 +80,7 @@ class Runner(object):
                 total_reword += r
                 env.render()
                 action = agent.act(np.copy(ob), r, d)
+                action = np.clip(action, -abs_output_limit, abs_output_limit)
 
                 if recoder is not None:
                     recoder.store(ob, action, r, d)

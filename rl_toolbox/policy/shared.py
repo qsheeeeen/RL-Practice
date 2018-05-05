@@ -4,8 +4,7 @@ import torch.nn.functional as F
 from torch.distributions import Normal
 
 from .core import Policy
-from ..distributions import MixtureNormal
-from ..net import SmallCNN, SmallRNN, MixtureDensityNetwork, VAE
+from ..net import SmallCNN, SmallRNN, VAE
 from ..util.common import batch_to_sequence, sequence_to_batch
 from ..util.init import orthogonal_init
 
@@ -22,6 +21,9 @@ class VAEPolicy(Policy):
         self.mean_head = nn.Linear(z_size, output_shape[0])
         self.log_std_head = nn.Parameter(torch.zeros(output_shape[0]))
         self.value_head = nn.Linear(z_size, 1)
+
+        self.mean_head.apply(orthogonal_init([nn.Linear], 'linear'))
+        self.value_head.apply(orthogonal_init([nn.Linear], 'linear'))
 
     def forward(self, x):
         with torch.no_grad():
@@ -110,6 +112,10 @@ class CNNPolicy(Policy):
         self.log_std_head = nn.Parameter(torch.zeros(output_shape[0]))
         self.value_head = nn.Linear(size, 1)
 
+        self.cnn.apply(orthogonal_init([nn.Linear], 'relu'))
+        self.mean_head.apply(orthogonal_init([nn.Linear], 'linear'))
+        self.value_head.apply(orthogonal_init([nn.Linear], 'linear'))
+
     def forward(self, x):
         feature = self.cnn(x)
 
@@ -168,7 +174,7 @@ class CNNLSTMPolicy(Policy):
 
     @property
     def num_steps(self):
-        return 1
+        return 4
 
     @property
     def recurrent(self):
@@ -195,6 +201,7 @@ class MLPPolicy(Policy):
         self.value_head = nn.Linear(64, 1)
 
         self.apply(orthogonal_init([nn.Linear], 'tanh'))
+        self.mean_head.apply(orthogonal_init([nn.Linear], 'linear'))
         self.value_head.apply(orthogonal_init([nn.Linear], 'linear'))
 
     def forward(self, x):
@@ -220,47 +227,6 @@ class MLPPolicy(Policy):
     @property
     def name(self):
         return 'MLPPolicy'
-
-
-class MixtureMLPPolicy(Policy):
-    def __init__(self, input_shape, output_shape):
-        super(MixtureMLPPolicy, self).__init__()
-        self.pd = None
-
-        self.pi_fc1 = nn.Linear(input_shape[0], 64)
-        self.pi_fc2 = nn.Linear(64, 64)
-
-        self.vf_fc1 = nn.Linear(input_shape[0], 64)
-        self.vf_fc2 = nn.Linear(64, 64)
-
-        self.mdn = MixtureDensityNetwork((self.pi_fc2.out_features,), output_shape, 3)
-        self.value_head = nn.Linear(64, 1)
-
-        self.apply(orthogonal_init([nn.Linear], 'tanh'))
-        self.value_head.apply(orthogonal_init([nn.Linear], 'linear'))
-
-    def forward(self, x):
-        pi_h1 = F.tanh(self.pi_fc1(x))
-        pi_h2 = F.tanh(self.pi_fc2(pi_h1))
-
-        pi, mean, std = self.mdn(pi_h2)
-
-        self.pd = MixtureNormal(pi, mean, std)
-        action = self.pd.sample() if self.training else mean
-
-        vf_h1 = F.tanh(self.vf_fc1(x))
-        vf_h2 = F.tanh(self.vf_fc2(vf_h1))
-        value = self.value_head(vf_h2)
-
-        return action, value
-
-    @property
-    def recurrent(self):
-        return False
-
-    @property
-    def name(self):
-        return 'MixtureMLPPolicy'
 
 
 class MLPLSTMPolicy(Policy):
@@ -305,7 +271,7 @@ class MLPLSTMPolicy(Policy):
 
     @property
     def num_steps(self):
-        return 1
+        return 4
 
     @property
     def recurrent(self):
