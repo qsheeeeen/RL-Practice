@@ -14,9 +14,9 @@ def vae_loss(recon_x, x, mu, sigma):
 
 
 class VAE(nn.Module):
-    def __init__(self, z_size=128):
+    def __init__(self, z_size=128, add_noise=True):
         super(VAE, self).__init__()
-        self.recurrent = False
+        self.add_noise = add_noise
 
         self.encoder = SmallCNN()
         self.decoder = nn.Sequential(nn.Linear(128, 512), SmallCNNTranspose())
@@ -33,7 +33,7 @@ class VAE(nn.Module):
         mu = self.mu_fc(feature)
         sigma = self.sigma_fc(feature)
 
-        z = mu + sigma * torch.randn_like(mu) if self.training else mu
+        z = mu + sigma * torch.randn_like(mu) if (self.add_noise and self.training) else mu
 
         return z, mu, sigma
 

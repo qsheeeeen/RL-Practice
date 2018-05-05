@@ -17,7 +17,6 @@ def main():
             seed=123)
 
         runner.run(num_episode=1000)
-
         # runner.run({'use_gpu': False}, num_episode=1000)  # For debug.
 
 

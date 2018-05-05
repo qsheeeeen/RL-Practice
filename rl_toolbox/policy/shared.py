@@ -10,52 +10,6 @@ from ..util.common import batch_to_sequence, sequence_to_batch
 from ..util.init import orthogonal_init
 
 
-class VAELSTMPolicy(Policy):
-    def __init__(self, input_shape, output_shape):
-        super(VAELSTMPolicy, self).__init__()
-        self.pd = None
-
-        z_size = 128
-
-        self.visual = VAE(z_size)
-
-        self.mean_head = nn.Linear(z_size, output_shape[0])
-        self.log_std_head = nn.Parameter(torch.zeros(output_shape[0]))
-        self.value_head = nn.Linear(z_size, 1)
-
-        for param in self.visual.parameters():
-            param.requires_grad = False
-
-        self.value_head.apply(orthogonal_init([nn.Linear], 'linear'))
-        self.mean_head.apply(orthogonal_init([nn.Linear], 'tanh'))
-
-    def forward(self, x):
-        with torch.no_grad:
-            feature, _, _ = self.visual.encode(x)
-
-        mean = F.tanh(self.mean_head(feature))
-        std = self.log_std_head.expand_as(mean).exp()
-
-        self.pd = Normal(mean, std)
-        action = self.pd.sample() if self.training else mean
-
-        value = self.value_head(feature)
-
-        return action, value
-
-    @property
-    def num_steps(self):
-        return 1
-
-    @property
-    def recurrent(self):
-        return True
-
-    @property
-    def name(self):
-        return 'VAELSTMPolicy'
-
-
 class VAEPolicy(Policy):
     def __init__(self, input_shape, output_shape):
         super(VAEPolicy, self).__init__()
@@ -63,7 +17,7 @@ class VAEPolicy(Policy):
 
         z_size = 128
 
-        self.visual = VAE(z_size)
+        self.visual = VAE(z_size, add_noise=False)
 
         self.mean_head = nn.Linear(z_size, output_shape[0])
         self.log_std_head = nn.Parameter(torch.zeros(output_shape[0]))
@@ -73,7 +27,7 @@ class VAEPolicy(Policy):
         with torch.no_grad():
             feature, _, _ = self.visual.encode(x)
 
-        mean = F.tanh(self.mean_head(feature))
+        mean = self.mean_head(feature)
         std = self.log_std_head.expand_as(mean).exp()
 
         self.pd = Normal(mean, std)
@@ -92,6 +46,57 @@ class VAEPolicy(Policy):
         return 'VAEPolicy'
 
 
+class VAELSTMPolicy(Policy):
+    def __init__(self, input_shape, output_shape):
+        super(VAELSTMPolicy, self).__init__()
+        self.pd = None
+
+        z_size = 128
+
+        self.visual = VAE(z_size, add_noise=False)
+
+        self.rnn = SmallRNN(z_size, z_size)
+
+        self.mean_head = nn.Linear(z_size, output_shape[0])
+        self.log_std_head = nn.Parameter(torch.zeros(output_shape[0]))
+        self.value_head = nn.Linear(z_size, 1)
+
+        for param in self.visual.parameters():
+            param.requires_grad = False
+
+        self.value_head.apply(orthogonal_init([nn.Linear], 'linear'))
+        self.mean_head.apply(orthogonal_init([nn.Linear], 'tanh'))
+
+    def forward(self, x):
+        with torch.no_grad:
+            feature, _, _ = self.visual.encode(x)
+
+        feature = batch_to_sequence(feature, self.num_steps)
+        memory = sequence_to_batch(self.rnn(feature))
+
+        mean = self.mean_head(memory)
+        std = self.log_std_head.expand_as(mean).exp()
+
+        self.pd = Normal(mean, std)
+        action = self.pd.sample() if self.training else mean
+
+        value = self.value_head(memory)
+
+        return action, value
+
+    @property
+    def num_steps(self):
+        return 1
+
+    @property
+    def recurrent(self):
+        return True
+
+    @property
+    def name(self):
+        return 'VAELSTMPolicy'
+
+
 class CNNPolicy(Policy):
     def __init__(self, input_shape, output_shape):
         super(CNNPolicy, self).__init__()
@@ -108,7 +113,7 @@ class CNNPolicy(Policy):
     def forward(self, x):
         feature = self.cnn(x)
 
-        mean = F.tanh(self.mean_head(feature))
+        mean = self.mean_head(feature)
         std = self.log_std_head.expand_as(mean).exp()
 
         self.pd = Normal(mean, std)
@@ -148,9 +153,10 @@ class CNNLSTMPolicy(Policy):
     def forward(self, x):
         feature = self.cnn(x)
 
-        memory = self.rnn(feature)
+        feature = batch_to_sequence(feature, self.num_steps)
+        memory = sequence_to_batch(self.rnn(feature))
 
-        mean = F.tanh(self.mean_head(memory))
+        mean = self.mean_head(memory)
         std = self.log_std_head.expand_as(mean).exp()
 
         self.pd = Normal(mean, std)
@@ -159,6 +165,10 @@ class CNNLSTMPolicy(Policy):
         value = self.value_head(memory)
 
         return action, value
+
+    @property
+    def num_steps(self):
+        return 1
 
     @property
     def recurrent(self):
@@ -191,7 +201,7 @@ class MLPPolicy(Policy):
         pi_h1 = F.tanh(self.pi_fc1(x))
         pi_h2 = F.tanh(self.pi_fc2(pi_h1))
 
-        mean = F.tanh(self.mean_head(pi_h2))
+        mean = self.mean_head(pi_h2)
         std = self.log_std_head.expand_as(mean).exp()
 
         self.pd = Normal(mean, std)
@@ -278,7 +288,7 @@ class MLPLSTMPolicy(Policy):
         pi_h2 = sequence_to_batch(self.pi_rnn(pi_h1))
         pi_h2 = F.tanh(pi_h2)
 
-        mean = F.tanh(self.mean_head(pi_h2))
+        mean = self.mean_head(pi_h2)
         std = self.log_std_head.expand_as(mean).exp()
 
         vf_h1 = F.tanh(self.vf_fc(x))

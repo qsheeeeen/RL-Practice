@@ -78,9 +78,7 @@ class PPOAgent(Agent):
                 action.detach(),
                 self.policy_old.pd.log_prob(action).detach()]
 
-            action = torch.clamp(action, -self.abs_output_limit, self.abs_output_limit)
-
-        return action.to('cpu').numpy()[0]
+        return torch.clamp(action, -self.abs_output_limit, self.abs_output_limit).to('cpu').squeeze(0).numpy()
 
     def _calculate_advantage(self, rewards, values):
         advantages = torch.zeros_like(rewards)
