@@ -13,8 +13,7 @@ def main():
             data_path=None,
             save=True,
             load=False,
-            weight_path='./weights/',
-            seed=123)
+            weight_path='./weights/')
 
         runner.run(num_episode=1000)
         # runner.run({'use_gpu': False}, num_episode=1000)  # For debug.
