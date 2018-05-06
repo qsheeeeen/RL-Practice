@@ -20,7 +20,7 @@ class Runner(object):
             load=False,
             weight_path='./weights/',
             image_path='./image/',
-            seed=1):
+            seed=123):
         self.env_name = env_name
         self.agent_fn = agent_fn
         self.policy_fn = policy_fn
