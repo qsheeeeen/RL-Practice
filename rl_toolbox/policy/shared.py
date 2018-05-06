@@ -3,13 +3,48 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Normal
 
-from .core import Policy
-from ..net import SmallCNN, SmallRNN, VAE
+from ..net import VAE
 from ..util.common import batch_to_sequence, sequence_to_batch
 from ..util.init import orthogonal_init
 
 
-class VAEPolicy(Policy):
+class _CNNBase(nn.Module):
+    def __init__(self):
+        super(_CNNBase, self).__init__()
+
+        self.conv1 = nn.Conv2d(3, 16, kernel_size=8, stride=4)
+        self.conv2 = nn.Conv2d(16, 32, kernel_size=4, stride=2)
+
+        self.fc = nn.Linear(3200, 256)
+
+    def forward(self, x):
+        h1 = F.relu(self.conv1(x))
+        h2 = F.relu(self.conv2(h1))
+
+        h2 = h2.view(h2.size(0), -1)
+
+        return F.relu(self.fc(h2))
+
+
+class _RNNBase(nn.Module):
+    def __init__(self, input_size, output_size):
+        super(_RNNBase, self).__init__()
+        self.rnn = nn.LSTM(input_size, output_size, batch_first=True)
+
+        self.hidden = None
+
+    def forward(self, x):
+        if self.hidden is None:
+            out, self.hidden = self.rnn(x)
+        else:
+            c, h = self.hidden
+            self.hidden = c.detach(), h.detach()
+            out, self.hidden = self.rnn(x, self.hidden)
+
+        return out
+
+
+class VAEPolicy(nn.Module):
     def __init__(self, input_shape, output_shape):
         super(VAEPolicy, self).__init__()
         self.pd = None
@@ -48,7 +83,7 @@ class VAEPolicy(Policy):
         return 'VAEPolicy'
 
 
-class VAELSTMPolicy(Policy):
+class VAELSTMPolicy(nn.Module):
     def __init__(self, input_shape, output_shape):
         super(VAELSTMPolicy, self).__init__()
         self.pd = None
@@ -57,7 +92,7 @@ class VAELSTMPolicy(Policy):
 
         self.visual = VAE(z_size, add_noise=False)
 
-        self.rnn = SmallRNN(z_size, z_size)
+        self.rnn = _RNNBase(z_size, z_size)
 
         self.mean_head = nn.Linear(z_size, output_shape[0])
         self.log_std_head = nn.Parameter(torch.zeros(output_shape[0]))
@@ -99,12 +134,12 @@ class VAELSTMPolicy(Policy):
         return 'VAELSTMPolicy'
 
 
-class CNNPolicy(Policy):
+class CNNPolicy(nn.Module):
     def __init__(self, input_shape, output_shape):
         super(CNNPolicy, self).__init__()
         self.pd = None
 
-        self.cnn = SmallCNN()
+        self.cnn = _CNNBase()
 
         size = self.cnn.fc.out_features
 
@@ -138,16 +173,16 @@ class CNNPolicy(Policy):
         return 'CNNPolicy'
 
 
-class CNNLSTMPolicy(Policy):
+class CNNLSTMPolicy(nn.Module):
     def __init__(self, input_shape, output_shape):
         super(CNNLSTMPolicy, self).__init__()
         self.pd = None
 
-        self.cnn = SmallCNN()
+        self.cnn = _CNNBase()
 
         size = self.cnn.fc.out_features
 
-        self.rnn = SmallRNN(size, size)
+        self.rnn = _RNNBase(size, size)
 
         self.mean_head = nn.Linear(size, output_shape[0])
         self.log_std_head = nn.Parameter(torch.ones(output_shape[0]))
@@ -185,7 +220,7 @@ class CNNLSTMPolicy(Policy):
         return 'CNNLSTMPolicy'
 
 
-class MLPPolicy(Policy):
+class MLPPolicy(nn.Module):
     def __init__(self, input_shape, output_shape):
         super(MLPPolicy, self).__init__()
         self.pd = None
@@ -229,16 +264,16 @@ class MLPPolicy(Policy):
         return 'MLPPolicy'
 
 
-class MLPLSTMPolicy(Policy):
+class MLPLSTMPolicy(nn.Module):
     def __init__(self, input_shape, output_shape):
         super(MLPLSTMPolicy, self).__init__()
         self.pd = None
 
         self.pi_fc = nn.Linear(input_shape[0], 64)
-        self.pi_rnn = SmallRNN(64, 64)
+        self.pi_rnn = _RNNBase(64, 64)
 
         self.vf_fc = nn.Linear(input_shape[0], 64)
-        self.vf_rnn = SmallRNN(64, 64)
+        self.vf_rnn = _RNNBase(64, 64)
 
         self.mean_head = nn.Linear(64, output_shape[0])
         self.log_std_head = nn.Parameter(torch.zeros(output_shape[0]))
