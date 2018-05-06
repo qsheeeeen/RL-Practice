@@ -12,13 +12,13 @@ Try to implement some RL related algorithm in PyTorch.
 
 | MLP policy | MLP LSTM policy
 |------------|----------------
-| <img src="image/LunarLanderContinuous-v2-MLPPolicy-1Process(es).png" width="300"/> | <img src="image/LunarLanderContinuous-v2-MLPLSTMPolicy-1Process(es).png" width="300"/>
+| <img src="image/LunarLanderContinuous-v2-MLPPolicy.png" width="300"/> | <img src="image/LunarLanderContinuous-v2-MLPLSTMPolicy.png" width="300"/>
 
 ### 1.2 CarRacing
 
 | CNN policy | CNN LSTM policy
 |------------|-----------------
-| <img src="image/CarRacing-v0-CNNPolicy-1Process(es).png" width="300"/> | <img src="image/CarRacing-v0-CNNLSTMPolicy-1Process(es).png" width="300"/>
+| <img src="image/CarRacing-v0-CNNPolicy.png" width="300"/> | <img src="image/CarRacing-v0-CNNLSTMPolicy.png" width="300"/>
 
 | Visual policy
 |---------------------

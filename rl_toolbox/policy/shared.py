@@ -146,10 +146,10 @@ class CNNPolicy(nn.Module):
         self.mean_head = nn.Linear(size, output_shape[0])
         self.log_std_head = nn.Parameter(torch.zeros(output_shape[0]))
         self.value_head = nn.Linear(size, 1)
-
-        self.cnn.apply(orthogonal_init([nn.Linear], 'relu'))
-        self.mean_head.apply(orthogonal_init([nn.Linear], 'linear'))
-        self.value_head.apply(orthogonal_init([nn.Linear], 'linear'))
+        #
+        # self.cnn.apply(orthogonal_init([nn.Linear], 'relu'))
+        # self.mean_head.apply(orthogonal_init([nn.Linear], 'linear'))
+        # self.value_head.apply(orthogonal_init([nn.Linear], 'linear'))
 
     def forward(self, x):
         feature = self.cnn(x)

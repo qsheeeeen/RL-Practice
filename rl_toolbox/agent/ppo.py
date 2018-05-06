@@ -13,7 +13,8 @@ class PPOAgent(Agent):
         default_kwargs = {
             'train': True,
             'use_gpu': True,
-            'horizon': 2048,
+            'horizon': 512,
+            'buffer_size': 4,
             'lr': 3e-4,
             'num_epoch': 10,
             'batch_size': 64,
@@ -31,6 +32,7 @@ class PPOAgent(Agent):
         self.use_gpu = default_kwargs.get('use_gpu') if kwargs.get('use_gpu') is None else kwargs.get('use_gpu')
 
         self.horizon = kwargs.get('horizon') or default_kwargs.get('horizon')
+        self.buffer_size = kwargs.get('buffer_size') or default_kwargs.get('buffer_size')
         self.lr = kwargs.get('lr') or default_kwargs.get('lr')
         self.num_epoch = kwargs.get('num_epoch') or default_kwargs.get('num_epoch')
         self.batch_size = kwargs.get('batch_size') or default_kwargs.get('batch_size')
@@ -48,7 +50,8 @@ class PPOAgent(Agent):
             self.policy = copy.deepcopy(self.policy_old)
             self.policy_optimizer = torch.optim.Adam(self.policy.parameters(), lr=self.lr, eps=1e-5)
 
-            self.replay_buffer = ReplayBuffer(self.horizon)
+            self.horizon_buffer = ReplayBuffer(self.horizon)
+            self.training_buffer = ReplayBuffer(self.buffer_size)
 
             self.stored = None
         else:
@@ -64,11 +67,21 @@ class PPOAgent(Agent):
             reward = torch.full_like(value, reward)
 
             if self.stored is not None:
-                self.replay_buffer.store(self.stored + [reward])
+                self.horizon_buffer.store(self.stored + [reward])
 
-            if self.replay_buffer.full():
+            if self.horizon_buffer.full():
+                states, values_old, actions_old, log_probs_old, rewards = self.horizon_buffer.get_all()
+
+                advantages = self._calculate_advantage(rewards, values_old)
+
+                values_target = advantages + values_old
+
+                self.training_buffer.store([states, actions_old, advantages, values_target, log_probs_old, values_old])
+                self.horizon_buffer.clear()
+
+            if self.training_buffer.full():
                 self._update_policy()
-                self.replay_buffer.clear()
+                self.training_buffer.clear()
 
             self.stored = [
                 state.detach(),
@@ -89,11 +102,7 @@ class PPOAgent(Agent):
         return advantages
 
     def _update_policy(self):
-        states, values_old, actions_old, log_probs_old, rewards = self.replay_buffer.get_all()
-
-        advantages = self._calculate_advantage(rewards, values_old)
-
-        values_target = advantages + values_old
+        states, actions_old, advantages, values_target, log_probs_old, values_old = self.training_buffer.get_all()
 
         dataset = TensorDataset(states, actions_old, advantages, values_target, log_probs_old, values_old)
 
