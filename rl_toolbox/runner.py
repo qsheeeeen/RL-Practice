@@ -88,7 +88,6 @@ class Runner(object):
                 if d:
                     reward_history.append(total_reword)
                     print('--------------------------------------')
-                    print('- PID:{}'.format(os.getpid()))
                     print('- Done.\tEpisode:{}\tStep:{}'.format(episode, step))
                     print('- Total reward:\t{:.6}'.format(total_reword))
                     if self.save and ((episode + 1) % save_interval == 0):

@@ -6,27 +6,24 @@ Try to implement some RL related algorithm in PyTorch.
 
 | VAE
 |-----
-| <img src="image/vae_reconstruction.png"/>
+| <img src="image/vae_reconstruction_15.png"/>
 
 ### 1.1 LunarLanderContinuous
 
-| MLP policy | MLP LSTM policy
-|------------|----------------
-| <img src="image/LunarLanderContinuous-v2-MLPPolicy.png" width="300"/> | <img src="image/LunarLanderContinuous-v2-MLPLSTMPolicy.png" width="300"/>
+| MLP policy
+|-----------
+| <img src="image/LunarLanderContinuous-v2-MLPPolicy.png" width="300"/>
 
 ### 1.2 CarRacing
 
-| CNN policy | CNN LSTM policy
-|------------|-----------------
-| <img src="image/CarRacing-v0-CNNPolicy.png" width="300"/> | <img src="image/CarRacing-v0-CNNLSTMPolicy.png" width="300"/>
+| CNN policy
+|-----------
+| <img src="image/CarRacing-v0-CNNPolicy.png" width="300"/>
 
 | Visual policy
-|---------------------
+|--------------
 | <img src="image/" width="300"/>
 
-| Visual Memory policy
-|---------------------
-| <img src="image/" width="300"/>
 
 
 ## 2. Setup
@@ -84,6 +81,8 @@ Make LSTM better(or correct).
 [openai/baselines](https://github.com/openai/baselines)
 
 [World Models](https://worldmodels.github.io/)
+
+[Training-PPO](https://github.com/Unity-Technologies/ml-agents/blob/master/docs/Training-PPO.md)
 
 ## License
 This project is released under MIT License. Please review [License](LICENSE) file for more details.

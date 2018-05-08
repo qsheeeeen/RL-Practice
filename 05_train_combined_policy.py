@@ -1,31 +1,33 @@
 from rl_toolbox import Runner
 from rl_toolbox.agent import PPOAgent
-from rl_toolbox.policy import VAEPolicy, VAELSTMPolicy
+from rl_toolbox.policy import VAEPolicy
 
 
 def main():
-    for i in range(2, 12, 2):
-        runner = Runner(
-            'CarRacing-v0',
-            PPOAgent,
-            VAEPolicy,
-            record_data=False,
-            data_path=None,
-            save=True,
-            load=(i > 2),
-            weight_path='./weights/')
-
-        runner.run({'abs_output_limit': i / 10}, num_episode=500, continue_plot=(i < 12))
+    # for i in range(4, 12, 2):
+    #     runner = Runner(
+    #         'CarRacing-v0',
+    #         PPOAgent,
+    #         VAEPolicy,
+    #         record_data=False,
+    #         data_path=None,
+    #         save=True,
+    #         load=(i > 4),
+    #         weight_path='./weights/')
+    #
+    #     runner.run(abs_output_limit=[1, i / 10, 1], num_episode=100, continue_plot=(i < 12))
 
     runner = Runner(
         'CarRacing-v0',
         PPOAgent,
-        VAELSTMPolicy,
-        save=True,
+        VAEPolicy,
+        record_data=False,
+        data_path=None,
+        save=False,
         load=True,
         weight_path='./weights/')
 
-    runner.run()
+    runner.run(abs_output_limit=[1, 0.6, 1],num_episode=500)
 
 
 if __name__ == '__main__':

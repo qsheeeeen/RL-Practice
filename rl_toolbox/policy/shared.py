@@ -57,20 +57,20 @@ class VAEPolicy(nn.Module):
         self.log_std_head = nn.Parameter(torch.zeros(output_shape[0]))
         self.value_head = nn.Linear(z_size, 1)
 
-        self.mean_head.apply(orthogonal_init([nn.Linear], 'linear'))
-        self.value_head.apply(orthogonal_init([nn.Linear], 'linear'))
+        # self.mean_head.apply(orthogonal_init([nn.Linear], 'linear'))
+        # self.value_head.apply(orthogonal_init([nn.Linear], 'linear'))
 
     def forward(self, x):
         with torch.no_grad():
             feature, _, _ = self.visual.encode(x)
 
-        mean = self.mean_head(feature)
+        mean = self.mean_head(feature.detach())
         std = self.log_std_head.expand_as(mean).exp()
 
         self.pd = Normal(mean, std)
         action = self.pd.sample() if self.training else mean
 
-        value = self.value_head(feature)
+        value = self.value_head(feature.detach())
 
         return action, value
 
@@ -123,7 +123,7 @@ class VAELSTMPolicy(nn.Module):
 
     @property
     def num_steps(self):
-        return 1
+        return 8
 
     @property
     def recurrent(self):
@@ -146,7 +146,7 @@ class CNNPolicy(nn.Module):
         self.mean_head = nn.Linear(size, output_shape[0])
         self.log_std_head = nn.Parameter(torch.zeros(output_shape[0]))
         self.value_head = nn.Linear(size, 1)
-        #
+
         # self.cnn.apply(orthogonal_init([nn.Linear], 'relu'))
         # self.mean_head.apply(orthogonal_init([nn.Linear], 'linear'))
         # self.value_head.apply(orthogonal_init([nn.Linear], 'linear'))
@@ -209,7 +209,7 @@ class CNNLSTMPolicy(nn.Module):
 
     @property
     def num_steps(self):
-        return 4
+        return 8
 
     @property
     def recurrent(self):
@@ -306,7 +306,7 @@ class MLPLSTMPolicy(nn.Module):
 
     @property
     def num_steps(self):
-        return 4
+        return 8
 
     @property
     def recurrent(self):
