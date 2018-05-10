@@ -27,7 +27,7 @@ def main():
         load=True,
         weight_path='./weights/')
 
-    runner.run(abs_output_limit=[1, 0.6, 1],num_episode=500)
+    runner.run(abs_output_limit=[1, 1, 1])
 
 
 if __name__ == '__main__':

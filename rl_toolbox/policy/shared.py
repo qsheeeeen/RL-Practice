@@ -49,7 +49,7 @@ class VAEPolicy(nn.Module):
         super(VAEPolicy, self).__init__()
         self.pd = None
 
-        z_size = 128
+        z_size = 256
 
         self.visual = VAE(z_size, add_noise=False)
 

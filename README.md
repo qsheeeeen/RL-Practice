@@ -22,7 +22,7 @@ Try to implement some RL related algorithm in PyTorch.
 
 | Visual policy
 |--------------
-| <img src="image/" width="300"/>
+| <img src="image/CarRacing-v0-VAEPolicy.png" width="300"/>
 
 
 

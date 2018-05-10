@@ -46,7 +46,7 @@ class Runner(object):
         if self.load:
             self.policy.load_state_dict(torch.load(self.weight_path))
 
-    def run(self, agent_kwargs=None, num_episode=1000, abs_output_limit=1, draw_result=True, continue_plot=False):
+    def run(self, agent_kwargs=None, num_episode=2000, abs_output_limit=1, draw_result=True, continue_plot=False):
         save_interval = 10
         abs_output_limit = np.array(abs_output_limit)
 
