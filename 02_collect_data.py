@@ -18,7 +18,7 @@ def main():
         load=True,
         weight_path='./weights/')
 
-    runner.run(num_episode=50, draw_result=False)
+    runner.run(num_episode=70, extra_message='collect data')
 
 
 if __name__ == '__main__':

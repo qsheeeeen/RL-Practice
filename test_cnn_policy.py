@@ -1,21 +1,20 @@
 from rl_toolbox import Runner
 from rl_toolbox.agent import PPOAgent
-from rl_toolbox.policy import VAEPolicy, CNNPolicy
+from rl_toolbox.policy import CNNPolicy
 
 
 def main():
-    for fun in (VAEPolicy, CNNPolicy):
         runner = Runner(
             'CarRacing-v0',
             PPOAgent,
-            fun,
+            CNNPolicy,
             record_data=False,
             data_path=None,
-            save=False,
-            load=True,
+            save=True,
+            load=False,
             weight_path='./weights/')
 
-        runner.run({'train': False}, num_episode=2)
+        runner.run(extra_message='simple')
 
 
 if __name__ == '__main__':

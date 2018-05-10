@@ -14,7 +14,7 @@ def main():
         load=False,
         weight_path='./weights/')
 
-    runner.run(num_episode=2000)
+    runner.run(num_episode=500)
     # runner.run({'use_gpu': False}, num_episode=1000)  # For debug.
 
 

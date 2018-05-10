@@ -26,3 +26,5 @@ print('Make VAEPolicy weights.')
 model = VAEPolicy((96, 96, 3), (3,))
 model.visual.load_state_dict(torch.load(args.vae_path))
 torch.save(model.state_dict(), args.out_path + model.name + '_weights.pth')
+
+print('Done.')

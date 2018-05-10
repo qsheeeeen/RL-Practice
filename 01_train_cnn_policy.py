@@ -15,19 +15,8 @@ def main():
             load=(i > 4),
             weight_path='./weights/')
 
-        runner.run(abs_output_limit=[1, i / 10, 1], num_episode=1000, continue_plot=(i < 12))
-
-    # runner = Runner(
-    #     'CarRacing-v0',
-    #     PPOAgent,
-    #     CNNPolicy,
-    #     record_data=False,
-    #     data_path=None,
-    #     save=True,
-    #     load=False,
-    #     weight_path='./weights/')
-    #
-    # runner.run(abs_output_limit=[1, 1, 1])
+        runner.run(abs_output_limit=[1, i / 10, 1],  continue_plot=(i < 12),
+                   extra_message='multi training')
 
 
 if __name__ == '__main__':

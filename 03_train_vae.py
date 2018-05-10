@@ -17,6 +17,8 @@ parser.add_argument('--batch-size', type=int, default=128, metavar='N',
                     help='input batch size for training (default: 128)')
 parser.add_argument('--epochs', type=int, default=15, metavar='N',
                     help='number of epochs to train (default: 10)')
+parser.add_argument('--load', action='store_true', default=False,
+                    help='load wieghts')
 parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='enables CUDA training')
 parser.add_argument('--seed', type=int, default=1, metavar='S',
@@ -47,7 +49,7 @@ def get_data_loader(file_path):
     train_length = len(data_t) - test_length
 
     print('Make dataset.')
-    data_set = TensorDataset(data_t, torch.empty(len(data_t)))
+    data_set = TensorDataset(data_t)
 
     train_dataset, test_dataset = random_split(data_set, (train_length, test_length))
 
@@ -72,8 +74,8 @@ train_loader, test_loader = get_data_loader(args.data_path)
 print('Make model.')
 model = VAE().to(device)
 
-# if args.load:
-#     model.load_state_dict(torch.load(args.load_path))
+if args.load:
+    model.load_state_dict(torch.load(args.load_path))
 
 optimizer = optim.Adam(model.parameters(), lr=1e-3)
 
@@ -81,8 +83,9 @@ optimizer = optim.Adam(model.parameters(), lr=1e-3)
 def train(epoch):
     model.train()
     train_loss = 0
-    for batch_idx, (data, _) in enumerate(train_loader):
-        data = data.to(device)
+    for batch_idx, data in enumerate(train_loader):
+        data = data[0].to(device)
+
         optimizer.zero_grad()
         recon_batch, mu, logvar = model(data)
         loss = vae_loss(recon_batch, data, mu, logvar)
@@ -103,8 +106,8 @@ def test(epoch):
     model.eval()
     test_loss = 0
     with torch.no_grad():
-        for i, (data, _) in enumerate(test_loader):
-            data = data.to(device)
+        for i, data in enumerate(test_loader):
+            data = data[0].to(device)
             recon_batch, mu, logvar = model(data)
             test_loss += vae_loss(recon_batch, data, mu, logvar).item()
             if i == 0:
