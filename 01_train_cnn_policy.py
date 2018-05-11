@@ -15,8 +15,8 @@ def main():
             load=(i > 4),
             weight_path='./weights/')
 
-        runner.run(abs_output_limit=[1, i / 10, 1],  continue_plot=(i < 12),
-                   extra_message='multi training')
+        runner.run(abs_output_limit=[1, i / 10, 1], continue_plot=(i < 12),
+                   extra_message='multi-training')
 
 
 if __name__ == '__main__':

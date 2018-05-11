@@ -47,12 +47,12 @@ class Runner(object):
             self.policy.load_state_dict(torch.load(self.weight_path))
 
     def run(self,
-            agent_kwargs=None,
             num_episode=1000,
             abs_output_limit=1,
             draw_result=True,
             continue_plot=False,
-            extra_message=''):
+            extra_message='',
+            **kwargs):
         save_interval = 10
         abs_output_limit = np.array(abs_output_limit)
 
@@ -68,10 +68,7 @@ class Runner(object):
         else:
             recoder = None
 
-        if agent_kwargs is not None:
-            agent = self.agent_fn(self.policy, **agent_kwargs)
-        else:
-            agent = self.agent_fn(self.policy)
+        agent = self.agent_fn(self.policy, **kwargs)
 
         reward_history = []
         for episode in range(num_episode):

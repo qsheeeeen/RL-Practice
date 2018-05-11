@@ -13,11 +13,11 @@ class PPOAgent(Agent):
         default_kwargs = {
             'train': True,
             'use_gpu': True,
-            'horizon': 128,
+            'horizon': 256,
             'buffer_size': 8,
             'lr': 2.5e-4,
             'num_epoch': 3,
-            'batch_size': 32*8,
+            'batch_size': 32 * 8,
             'clip_range': 0.1,
             'vf_coeff': 1,
             'discount_factor': 0.99,
@@ -106,10 +106,7 @@ class PPOAgent(Agent):
 
         dataset = TensorDataset(states, actions_old, advantages, values_target, log_probs_old, values_old)
 
-        data_loader = DataLoader(
-            dataset,
-            self.batch_size * self.policy.num_steps if self.policy.recurrent else self.batch_size,
-            shuffle=not self.policy.recurrent)
+        data_loader = DataLoader(dataset, self.batch_size, shuffle=not self.policy.recurrent)
 
         for _ in range(self.num_epoch):
             for states, actions_old, advantages, values_target, log_probs_old, values_old in data_loader:

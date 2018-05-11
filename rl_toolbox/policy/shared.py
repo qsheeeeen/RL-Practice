@@ -30,6 +30,7 @@ class _RNNBase(nn.Module):
     def __init__(self, input_size, output_size):
         super(_RNNBase, self).__init__()
         self.rnn = nn.LSTM(input_size, output_size, batch_first=True)
+        # self.rnn = nn.GRU(input_size, output_size, batch_first=True)
 
         self.hidden = None
 
@@ -188,8 +189,8 @@ class CNNLSTMPolicy(nn.Module):
         self.log_std_head = nn.Parameter(torch.ones(output_shape[0]))
         self.value_head = nn.Linear(size, 1)
 
-        self.value_head.apply(orthogonal_init([nn.Linear], 'linear'))
-        self.mean_head.apply(orthogonal_init([nn.Linear], 'tanh'))
+        # self.value_head.apply(orthogonal_init([nn.Linear], 'linear'))
+        # self.mean_head.apply(orthogonal_init([nn.Linear], 'tanh'))
 
     def forward(self, x):
         feature = self.cnn(x)
