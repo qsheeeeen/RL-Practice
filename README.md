@@ -1,4 +1,4 @@
-# Reinforcement Learning Practice(Unfinished)
+# Reinforcement Learning Practice
 
 Try to implement some RL related algorithm in PyTorch.
 

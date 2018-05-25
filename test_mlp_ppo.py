@@ -1,13 +1,13 @@
 from rl_toolbox import Runner
 from rl_toolbox.agent import PPOAgent
-from rl_toolbox.policy import MLPLSTMPolicy
+from rl_toolbox.policy import MLPPolicy
 
 
 def main():
     runner = Runner(
         'LunarLanderContinuous-v2',
         PPOAgent,
-        MLPLSTMPolicy,
+        MLPPolicy,
         record_data=False,
         data_path=None,
         save=True,
